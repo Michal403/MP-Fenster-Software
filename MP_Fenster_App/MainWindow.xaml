@@ -4,17 +4,18 @@
         Title="Logowanie - M+P Fenster" 
         Height="450" Width="600" 
         WindowStartupLocation="CenterScreen"
+        Background="Transparent"
         ResizeMode="NoResize"
         WindowStyle="None"
-        AllowsTransparency="True">
-
-    <Grid>
-        <!-- Tło z obrazka tło ekranu logowania.png -->
-        <Grid.Background>
-            <ImageBrush ImageSource="/tło ekranu logowania.png" Stretch="UniformToFill"/>
-        </Grid.Background>
-
-        <!-- Ciemna nakładka, żeby napisy były czytelne -->
+        AllowsTransparency="True"
+    MouseLeftButtonDown="Window_MouseLeftButtonDown">
+    <Border CornerRadius="20" ClipToBounds="True">
+                <!-- login_bg.png -->
+        <Border.Background>
+            <ImageBrush ImageSource="/login_bg.png" Stretch="UniformToFill"/>
+        </Border.Background>
+        <Grid>
+            <!-- Ciemna nakładka, żeby napisy były czytelne -->
         <Border Background="Black" Opacity="0.15"/>
 
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="450">
@@ -57,7 +58,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Grid.Column="0" Content="Anuluj" Height="40" 
+                <Button Grid.Column="0" Content="Anuluj" Height="40" Click="ButtonAnuluj_Click"
                         Background="White" Foreground="Black" FontWeight="Bold" BorderThickness="0">
                     <Button.Resources>
                         <Style TargetType="Border">
@@ -77,4 +78,5 @@
             </Grid>
         </StackPanel>
     </Grid>
+    </Border>
 </Window>

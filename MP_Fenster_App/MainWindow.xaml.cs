@@ -20,5 +20,13 @@ namespace MP_Fenster_App
         {
             InitializeComponent();
         }
+        private void ButtonAnuluj_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
+        }
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            this.DragMove(); // Pozwala złapać okno w dowolnym miejscu i je przesunąć
+        }
     }
 }
