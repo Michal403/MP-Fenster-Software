@@ -8,75 +8,81 @@
         ResizeMode="NoResize"
         WindowStyle="None"
         AllowsTransparency="True"
-    MouseLeftButtonDown="Window_MouseLeftButtonDown">
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+
     <Border CornerRadius="20" ClipToBounds="True">
-                <!-- login_bg.png -->
         <Border.Background>
             <ImageBrush ImageSource="/login_bg.png" Stretch="UniformToFill"/>
         </Border.Background>
+
         <Grid>
-            <!-- Ciemna nakładka, żeby napisy były czytelne -->
-        <Border Background="Black" Opacity="0.15"/>
+            <!-- Ciemna nakładka dla czytelności -->
+            <Border Background="Black" Opacity="0.15"/>
 
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="450">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="400">
 
-            <!-- Nagłówek -->
-            <TextBlock Text="M+P Fenster Software" 
-                       FontSize="36" FontWeight="Bold" Foreground="White" 
-                       HorizontalAlignment="Center" Margin="0,0,0,5">
-                <TextBlock.Effect>
-                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.5"/>
-                </TextBlock.Effect>
-            </TextBlock>
+                <!-- Nagłówek -->
+                <TextBlock Text="M+P Fenster Software" 
+                           FontSize="36" FontWeight="Bold" Foreground="White" 
+                           HorizontalAlignment="Center" Margin="0,0,0,5">
+                    <TextBlock.Effect>
+                        <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.5"/>
+                    </TextBlock.Effect>
+                </TextBlock>
 
-            <TextBlock Text="Zaloguj się do systemu ERP" 
-                       FontSize="16" Foreground="White" 
-                       HorizontalAlignment="Center" Margin="0,0,0,30"/>
+                <TextBlock Text="Zaloguj się do systemu ERP" 
+                           FontSize="16" Foreground="White" 
+                           HorizontalAlignment="Center" Margin="0,0,0,30"/>
 
-            <!-- Pole Użytkownika -->
-            <TextBlock Text="Nazwa użytkownika:" Foreground="White" Margin="0,0,0,5" FontSize="14"/>
-            <Border Background="White" CornerRadius="8" Margin="0,0,0,15">
-                <TextBox x:Name="TxtUser" Height="45" Background="Transparent" BorderThickness="0" 
-                         VerticalContentAlignment="Center" Padding="10,0" FontSize="14" 
-                         Foreground="Gray" Text="wpisz login..."/>
-            </Border>
+                <!-- Pole Użytkownika -->
+                <TextBlock Text="Nazwa użytkownika:" Foreground="White" Margin="0,0,0,5" FontSize="14"/>
+                <Border Background="White" CornerRadius="8" Margin="0,0,0,15">
+                    <TextBox x:Name="TxtUser" 
+                             GotFocus="TxtUser_GotFocus" 
+                             LostFocus="TxtUser_LostFocus" 
+                             Height="45" Background="Transparent" BorderThickness="0" 
+                             VerticalContentAlignment="Center" Padding="10,0" FontSize="14" 
+                             Foreground="Gray" Text="wpisz login..."/>
+                </Border>
 
-            <!-- Pole Hasła -->
-            <TextBlock Text="Hasło:" Foreground="White" Margin="0,0,0,5" FontSize="14"/>
-            <Border Background="White" CornerRadius="8" Margin="0,0,0,30">
-                <!-- Uwaga: W prawdziwej aplikacji używamy PasswordBox, ale dla wyglądu damy TextBox z tekstem pomocniczym -->
-                <TextBox x:Name="TxtPass" Height="45" Background="Transparent" BorderThickness="0" 
-                         VerticalContentAlignment="Center" Padding="10,0" FontSize="14" 
-                         Foreground="Gray" Text="wpisz hasło..."/>
-            </Border>
+                <!-- Pole Hasła -->
+                <TextBlock Text="Hasło:" Foreground="White" Margin="0,0,0,5" FontSize="14"/>
+                <Border Background="White" CornerRadius="8" Margin="0,0,0,30">
+                    <TextBox x:Name="TxtPass" 
+                             GotFocus="TxtPass_GotFocus" 
+                             LostFocus="TxtPass_LostFocus" 
+                             Height="45" Background="Transparent" BorderThickness="0" 
+                             VerticalContentAlignment="Center" Padding="10,0" FontSize="14" 
+                             Foreground="Gray" Text="wpisz hasło..."/>
+                </Border>
 
-            <!-- Przyciski -->
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="20"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+                <!-- Przyciski -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                <Button Grid.Column="0" Content="Anuluj" Height="40" Click="ButtonAnuluj_Click"
-                        Background="White" Foreground="Black" FontWeight="Bold" BorderThickness="0">
-                    <Button.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="8"/>
-                        </Style>
-                    </Button.Resources>
-                </Button>
+                    <Button Grid.Column="0" Content="Anuluj" Height="40" Click="ButtonAnuluj_Click"
+                            Background="White" Foreground="Black" FontWeight="Bold" BorderThickness="0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="8"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
 
-                <Button Grid.Column="2" Content="Zaloguj" Height="40" 
-                        Background="#2196F3" Foreground="White" FontWeight="Bold" BorderThickness="0">
-                    <Button.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="8"/>
-                        </Style>
-                    </Button.Resources>
-                </Button>
-            </Grid>
-        </StackPanel>
-    </Grid>
+                    <Button Grid.Column="2" Content="Zaloguj" Height="40" Click="BtnZaloguj_Click"
+                            Background="#2196F3" Foreground="White" FontWeight="Bold" BorderThickness="0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="8"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </Grid>
     </Border>
 </Window>

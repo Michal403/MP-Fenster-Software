@@ -11,22 +11,80 @@ using System.Windows.Shapes;
 
 namespace MP_Fenster_App
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         public MainWindow()
         {
             InitializeComponent();
         }
+
+        // Pozwala złapać okno w dowolnym miejscu i je przesunąć
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            this.DragMove();
+        }
+
+        // Zamknięcie aplikacji
         private void ButtonAnuluj_Click(object sender, RoutedEventArgs e)
         {
             Application.Current.Shutdown();
         }
-        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+
+        // LOGIKA LOGOWANIA
+        private void BtnZaloguj_Click(object sender, RoutedEventArgs e)
         {
-            this.DragMove(); // Pozwala złapać okno w dowolnym miejscu i je przesunąć
+            string login = TxtUser.Text;
+            string haslo = TxtPass.Text;
+
+            // Tymczasowe sprawdzenie (zanim podłączymy bazę danych)
+            if (login == "admin" && haslo == "123")
+            {
+                MessageBox.Show("Zalogowano pomyślnie!", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Tu w przyszłości otworzymy nowe okno
+            }
+            else
+            {
+                MessageBox.Show("Wpisz poprawny login lub hasło!", "Błąd logowania", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // OBSŁUGA PLACEHOLDERÓW (Znikający tekst)
+        private void TxtUser_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (TxtUser.Text == "wpisz login...")
+            {
+                TxtUser.Text = "";
+                TxtUser.Foreground = Brushes.Black;
+            }
+        }
+
+        private void TxtUser_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(TxtUser.Text))
+            {
+                TxtUser.Text = "wpisz login...";
+                TxtUser.Foreground = Brushes.Gray;
+            }
+        }
+
+        // Poprawiona obsługa hasła
+        private void TxtPass_GotFocus(object sender, RoutedEventArgs e)
+        {
+            // Sprawdź dokładnie, czy tekst w "" jest identyczny jak w pliku XAML
+            if (TxtPass.Text == "wpisz hasło...")
+            {
+                TxtPass.Text = "";
+                TxtPass.Foreground = Brushes.Black;
+            }
+        }
+
+        private void TxtPass_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(TxtPass.Text))
+            {
+                TxtPass.Text = "wpisz hasło...";
+                TxtPass.Foreground = Brushes.Gray;
+            }
         }
     }
 }
