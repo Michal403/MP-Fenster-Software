@@ -30,25 +30,32 @@ namespace MP_Fenster_App
             Application.Current.Shutdown();
         }
 
-        // LOGIKA LOGOWANIA
+        // LOGIKA LOGOWANIA - Zostawiamy tylko tę wersję, która otwiera nowe okno
         private void BtnZaloguj_Click(object sender, RoutedEventArgs e)
         {
             string login = TxtUser.Text;
             string haslo = TxtPass.Text;
 
-            // Tymczasowe sprawdzenie (zanim podłączymy bazę danych)
+            // Statyczne sprawdzenie danych
             if (login == "admin" && haslo == "123")
             {
-                MessageBox.Show("Zalogowano pomyślnie!", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
-                // Tu w przyszłości otworzymy nowe okno
+                // 1. Tworzymy instancję nowego okna (musisz je najpierw dodać do projektu!)
+                HandlowiecWindow oknoHandlowca = new HandlowiecWindow();
+
+                // 2. Pokazujemy nowe okno
+                oknoHandlowca.Show();
+
+                // 3. Zamykamy okno logowania
+                this.Close();
             }
             else
             {
-                MessageBox.Show("Wpisz poprawny login lub hasło!", "Błąd logowania", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Nieprawidłowe dane! Spróbuj: admin / 123", "Błąd logowania",
+                                MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
-        // OBSŁUGA PLACEHOLDERÓW (Znikający tekst)
+        // OBSŁUGA PLACEHOLDERÓW (Login)
         private void TxtUser_GotFocus(object sender, RoutedEventArgs e)
         {
             if (TxtUser.Text == "wpisz login...")
@@ -67,10 +74,9 @@ namespace MP_Fenster_App
             }
         }
 
-        // Poprawiona obsługa hasła
+        // OBSŁUGA PLACEHOLDERÓW (Hasło)
         private void TxtPass_GotFocus(object sender, RoutedEventArgs e)
         {
-            // Sprawdź dokładnie, czy tekst w "" jest identyczny jak w pliku XAML
             if (TxtPass.Text == "wpisz hasło...")
             {
                 TxtPass.Text = "";
@@ -85,6 +91,20 @@ namespace MP_Fenster_App
                 TxtPass.Text = "wpisz hasło...";
                 TxtPass.Foreground = Brushes.Gray;
             }
+        }
+        private void BtnZaloguj_Click(object sender, RoutedEventArgs e)
+        {
+            string login = TxtUser.Text;
+            string haslo = TxtPass.Text;
+
+            if (login == "admin" || login == "Michał") // Dodajmy Twoje imię do testów
+            {
+                // Przekazujemy login do konstruktora nowego okna
+                HandlowiecWindow oknoHandlowca = new HandlowiecWindow(login);
+                oknoHandlowca.Show();
+                this.Close();
+            }
+            // ... reszta Twojego kodu erroru
         }
     }
 }
