@@ -1,12 +1,80 @@
 ﻿<Window x:Class="MP_Fenster_App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MP_Fenster_App"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="Logowanie - M+P Fenster" 
+        Height="450" Width="600" 
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True">
 
+    <Grid>
+        <!-- Tło z obrazka tło ekranu logowania.png -->
+        <Grid.Background>
+            <ImageBrush ImageSource="/tło ekranu logowania.png" Stretch="UniformToFill"/>
+        </Grid.Background>
+
+        <!-- Ciemna nakładka, żeby napisy były czytelne -->
+        <Border Background="Black" Opacity="0.15"/>
+
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="450">
+
+            <!-- Nagłówek -->
+            <TextBlock Text="M+P Fenster Software" 
+                       FontSize="36" FontWeight="Bold" Foreground="White" 
+                       HorizontalAlignment="Center" Margin="0,0,0,5">
+                <TextBlock.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.5"/>
+                </TextBlock.Effect>
+            </TextBlock>
+
+            <TextBlock Text="Zaloguj się do systemu ERP" 
+                       FontSize="16" Foreground="White" 
+                       HorizontalAlignment="Center" Margin="0,0,0,30"/>
+
+            <!-- Pole Użytkownika -->
+            <TextBlock Text="Nazwa użytkownika:" Foreground="White" Margin="0,0,0,5" FontSize="14"/>
+            <Border Background="White" CornerRadius="8" Margin="0,0,0,15">
+                <TextBox x:Name="TxtUser" Height="45" Background="Transparent" BorderThickness="0" 
+                         VerticalContentAlignment="Center" Padding="10,0" FontSize="14" 
+                         Foreground="Gray" Text="wpisz login..."/>
+            </Border>
+
+            <!-- Pole Hasła -->
+            <TextBlock Text="Hasło:" Foreground="White" Margin="0,0,0,5" FontSize="14"/>
+            <Border Background="White" CornerRadius="8" Margin="0,0,0,30">
+                <!-- Uwaga: W prawdziwej aplikacji używamy PasswordBox, ale dla wyglądu damy TextBox z tekstem pomocniczym -->
+                <TextBox x:Name="TxtPass" Height="45" Background="Transparent" BorderThickness="0" 
+                         VerticalContentAlignment="Center" Padding="10,0" FontSize="14" 
+                         Foreground="Gray" Text="wpisz hasło..."/>
+            </Border>
+
+            <!-- Przyciski -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Content="Anuluj" Height="40" 
+                        Background="White" Foreground="Black" FontWeight="Bold" BorderThickness="0">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="8"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+
+                <Button Grid.Column="2" Content="Zaloguj" Height="40" 
+                        Background="#2196F3" Foreground="White" FontWeight="Bold" BorderThickness="0">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="8"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </Grid>
+        </StackPanel>
     </Grid>
 </Window>
