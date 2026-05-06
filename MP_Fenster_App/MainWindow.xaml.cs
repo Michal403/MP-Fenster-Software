@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Microsoft.Data.SqlClient;
 
 namespace MP_Fenster_App
 {
@@ -57,7 +58,7 @@ namespace MP_Fenster_App
                 TxtPass.Text = "";
                 TxtPass.Foreground = Brushes.Black;
             }
-        }
+        } 
 
         private void TxtPass_LostFocus(object sender, RoutedEventArgs e)
         {
@@ -69,27 +70,55 @@ namespace MP_Fenster_App
         }
         private void BtnZaloguj_Click(object sender, RoutedEventArgs e)
         {
-            string login = TxtUser.Text;
-            string haslo = TxtPass.Text;
+            string loginInput = TxtUser.Text;
+            string hasloInput = TxtPass.Text;
 
-            // 1. Sprawdzamy Handlowca/Admina
-            if (login.ToLower() == "admin" || login.ToLower() == "michał" || login.ToLower() == "michal")
+            // To jest klucz do Twojej bazy na Azure
+            string connectionString = "TUTAJ_WKLEJ_CONNECTION_STRING";
+
+            try
             {
-                HandlowiecWindow oknoHandlowca = new HandlowiecWindow(login);
-                oknoHandlowca.Show();
-                this.Close();
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    // Szukamy roli użytkownika w bazie
+                    string query = "SELECT Rola FROM Uzytkownicy WHERE Login = @login AND Haslo = @haslo";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        // Parametry chronią przed atakami (SQL Injection)
+                        command.Parameters.AddWithValue("@login", loginInput);
+                        command.Parameters.AddWithValue("@haslo", hasloInput);
+
+                        object result = command.ExecuteScalar();
+
+                        if (result != null)
+                        {
+                            string rola = result.ToString();
+
+                            if (rola == "Handlowiec")
+                            {
+                                new HandlowiecWindow(loginInput).Show();
+                            }
+                            else if (rola == "Technolog")
+                            {
+                                new TechnologWindow(loginInput).Show();
+                            }
+
+                            this.Close();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Błędny login lub hasło!", "Błąd Bazy Azure");
+                        }
+                    }
+                }
             }
-            // 2. JEŚLI NIE HANDLOWIEC, to sprawdzamy Technologa (używamy ELSE IF)
-            else if (login.ToLower() == "technolog")
+            catch (Exception ex)
             {
-                TechnologWindow oknoTech = new TechnologWindow(login);
-                oknoTech.Show();
-                this.Close();
-            }
-            // 3. JEŚLI NIKT Z POWYŻSZYCH, to błąd
-            else
-            {
-                MessageBox.Show("Błędny login lub hasło!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+                // Jeśli np. zapomnisz dodać IP do Firewall'a w Azure, tutaj wyskoczy błąd
+                MessageBox.Show("Problem z połączeniem: " + ex.Message);
             }
         }
 
