@@ -1,53 +1,66 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace MP_Fenster_App
 {
     public partial class HandlowiecWindow : Window
     {
-        public HandlowiecWindow()
+        private string _zalogowanyUser;
+
+        public HandlowiecWindow(string user)
         {
             InitializeComponent();
+
+            _zalogowanyUser = user;
+
+            // Ustawiamy dane na pasku statusu (naprawa Kowalskiego)
+            StatusUser.Content = _zalogowanyUser.ToUpper();
+            StatusDate.Content = DateTime.Now.ToString("dd.MM.yyyy");
+            StatusTime.Content = DateTime.Now.ToString("HH:mm");
+
+            // Wywołujemy funkcję, która w przyszłości pociągnie dane z Azure
+            OdswiezZleceniaZBazy();
         }
 
-        // 1. Logika dla dużych kafelków (Buttons)
-
-        private void BtnNowe_Click(object sender, RoutedEventArgs e)
+        private void OdswiezZleceniaZBazy()
         {
-            // Tutaj w przyszłości otworzymy okno tworzenia zlecenia
-            MessageBox.Show("Otwieranie formularza: Nowe zlecenie", "SeaShark ERP");
+            // Czyścimy drzewo przed ładowaniem
+            MyOrdersTree.Items.Clear();
+
+            // Tworzymy główny węzeł
+            TreeViewItem root = new TreeViewItem { Header = "Zlecenia", IsExpanded = true };
+
+            // SYMULACJA DANYCH Z BAZY (tu wstawimy SQL Connection potem)
+            // Na razie dodajemy przykłady, żebyś widział, że działa dynamicznie
+            root.Items.Add(new TreeViewItem { Header = "Zlecenie 45689 - Aktywne" });
+            root.Items.Add(new TreeViewItem { Header = "Zlecenie 45700 - Wycena" });
+            root.Items.Add(new TreeViewItem { Header = "Zlecenie 45812 - Nowe" });
+
+            MyOrdersTree.Items.Add(root);
         }
 
-        private void BtnPrzeglad_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Ładowanie listy wszystkich zleceń...", "SeaShark ERP");
-        }
-
-        private void BtnStatus_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Sprawdzanie statusu produkcji i wysyłek...", "SeaShark ERP");
-        }
-
-        private void BtnKlienci_Click(object sender, RoutedEventArgs e)
-        {
-            // Logika, którą przygotowałeś wcześniej dla bazy klientów
-            MessageBox.Show("Ładowanie bazy klientów z systemu...", "SeaShark ERP");
-        }
-
-        // 2. Logika nawigacji i wyjścia
+        // --- Obsługa menu i przycisków ---
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
-            // Powrót do okna logowania
             MainWindow loginWindow = new MainWindow();
             loginWindow.Show();
             this.Close();
         }
 
-        // Jeśli masz przyciski z poprzedniej wersji (Dashboard/Wycena), 
-        // możesz je tutaj zostawić lub usunąć, zależnie od tego, czy są w XAML
-        private void BtnWycena_Click(object sender, RoutedEventArgs e)
+        private void BtnNowe_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Uruchamianie kalkulatora wycen...", "SeaShark ERP");
+            MessageBox.Show("Otwieranie formularza nowego zlecenia...");
         }
+
+        private void BtnPrzeglad_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Przegląd wszystkich zleceń użytkownika " + _zalogowanyUser);
+        }
+
+        private void BtnStatus_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Statusy zleceń");
+
+        private void BtnKlienci_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Baza klientów");
     }
 }

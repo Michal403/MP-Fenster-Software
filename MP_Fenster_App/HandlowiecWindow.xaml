@@ -5,18 +5,13 @@
         WindowStartupLocation="CenterScreen" Background="#E0E0E0">
 
     <Window.Resources>
-        <!-- Styl dla dużych kolorowych kafelków -->
+        <!-- Styl dla kolorowych kafelków -->
         <Style x:Key="TileButtonStyle" TargetType="Button">
-            <Setter Property="Margin" Value="20"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="Black"/>
+            <Setter Property="Margin" Value="15"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
-                                BorderBrush="{TemplateBinding BorderBrush}" 
-                                BorderThickness="{TemplateBinding BorderThickness}" 
-                                CornerRadius="10">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="10" BorderBrush="Black" BorderThickness="1">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </ControlTemplate>
@@ -27,106 +22,86 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <!-- Menu górne -->
-            <RowDefinition Height="*"/>
-            <!-- Główna zawartość -->
             <RowDefinition Height="30"/>
-            <!-- Pasek statusu -->
+            <!-- 0: Menu -->
+            <RowDefinition Height="*"/>
+            <!-- 1: Treść -->
+            <RowDefinition Height="30"/>
+            <!-- 2: Status -->
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="40"/>
-            <!-- Niebieski pasek boczny -->
-            <ColumnDefinition Width="200"/>
-            <!-- Drzewo zleceń -->
+            <!-- 0: Pasek pionowy -->
+            <ColumnDefinition Width="220"/>
+            <!-- 1: Drzewo zleceń -->
             <ColumnDefinition Width="*"/>
-            <!-- Panel główny -->
+            <!-- 2: Kafelki -->
         </Grid.ColumnDefinitions>
 
         <!-- MENU GÓRNE -->
-        <Menu Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Background="#F0F0F0" Padding="5">
+        <Menu Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Background="#F0F0F0">
             <MenuItem Header="Strona startowa"/>
             <MenuItem Header="Opcje"/>
             <MenuItem Header="Drukuj"/>
-            <MenuItem Header="Portal internetowy"/>
             <MenuItem Header="Pomoc"/>
             <MenuItem Header="Koniec" Click="BtnLogout_Click"/>
         </Menu>
 
-        <!-- NIEBIESKI PIONOWY PASEK (Z tekstem) -->
+        <!-- NIEBIESKI PASEK BOCZNY -->
         <Border Grid.Row="1" Grid.Column="0" Background="#1E88E5">
-            <TextBlock Text="M+P  FENSTER  SOFTWARE  2026" Foreground="White" 
-                       FontWeight="Bold" FontSize="18" VerticalAlignment="Bottom" Margin="0,0,0,20">
+            <TextBlock Text="M+P  FENSTER  SOFTWARE  2026" Foreground="White" FontWeight="Bold" FontSize="16" VerticalAlignment="Bottom" Margin="0,0,0,20">
                 <TextBlock.LayoutTransform>
                     <RotateTransform Angle="-90"/>
                 </TextBlock.LayoutTransform>
             </TextBlock>
         </Border>
 
-        <!-- LISTA / DRZEWO ZLECEŃ -->
+        <!-- DRZEWO ZLECEŃ -->
         <Border Grid.Row="1" Grid.Column="1" Background="White" BorderBrush="#CCCCCC" BorderThickness="0,0,1,0">
             <StackPanel Margin="10">
                 <TextBlock Text="Ostatnie zlecenia" FontWeight="Bold" Margin="0,0,0,10"/>
-                <TreeView BorderThickness="0">
-                    <TreeViewItem Header="Zlecenia" IsExpanded="True">
-                        <TreeViewItem Header="Zlecenie 45689"/>
-                        <TreeViewItem Header="Zlecenie 45690"/>
-                        <TreeViewItem Header="Zlecenie 45720"/>
-                        <TreeViewItem Header="Zlecenie 45725"/>
-                        <TreeViewItem Header="Zlecenie 45726"/>
-                    </TreeViewItem>
-                </TreeView>
+                <TreeView x:Name="MyOrdersTree" BorderThickness="0"/>
             </StackPanel>
         </Border>
 
-        <!-- PANEL GŁÓWNY Z KAFELKAMI -->
-        <Border Grid.Row="1" Grid.Column="2" Background="#90AFC5" Margin="20" 
-                CornerRadius="10" BorderBrush="Black" BorderThickness="1">
-            <UniformGrid Columns="2" Rows="2" Margin="50">
-
-                <!-- Nowe zlecenie -->
-                <Button Style="{StaticResource TileButtonStyle}" Background="#90EE90" x:Name="BtnNowe">
+        <!-- KAFELKI -->
+        <Border Grid.Row="1" Grid.Column="2" Background="#90AFC5" Margin="15" CornerRadius="10" BorderBrush="Black" BorderThickness="1">
+            <UniformGrid Columns="2" Rows="2" Margin="30">
+                <Button Style="{StaticResource TileButtonStyle}" Background="#90EE90" Click="BtnNowe_Click">
                     <StackPanel>
-                        <TextBlock Text="✎" FontSize="60" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Nowe zlecenie" FontSize="20" FontWeight="SemiBold"/>
+                        <TextBlock Text="✎" FontSize="50" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Nowe zlecenie" FontSize="18"/>
                     </StackPanel>
                 </Button>
-
-                <!-- Przegląd zleceń -->
-                <Button Style="{StaticResource TileButtonStyle}" Background="#FFD39B" x:Name="BtnPrzeglad">
+                <Button Style="{StaticResource TileButtonStyle}" Background="#FFD39B" Click="BtnPrzeglad_Click">
                     <StackPanel>
-                        <TextBlock Text="田" FontSize="60" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Przegląd zleceń" FontSize="20" FontWeight="SemiBold"/>
+                        <TextBlock Text="田" FontSize="50" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Przegląd zleceń" FontSize="18"/>
                     </StackPanel>
                 </Button>
-
-                <!-- Status zleceń -->
-                <Button Style="{StaticResource TileButtonStyle}" Background="#FF7F7F" x:Name="BtnStatus">
+                <Button Style="{StaticResource TileButtonStyle}" Background="#FF7F7F" Click="BtnStatus_Click">
                     <StackPanel>
-                        <TextBlock Text="📁" FontSize="60" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Status zleceń" FontSize="20" FontWeight="SemiBold"/>
+                        <TextBlock Text="📁" FontSize="50" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Status zleceń" FontSize="18"/>
                     </StackPanel>
                 </Button>
-
-                <!-- Baza Klientów -->
-                <Button Style="{StaticResource TileButtonStyle}" Background="#B39DDB" x:Name="BtnKlienci">
+                <Button Style="{StaticResource TileButtonStyle}" Background="#B39DDB" Click="BtnKlienci_Click">
                     <StackPanel>
-                        <TextBlock Text="👤👤" FontSize="60" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Baza Klientów" FontSize="20" FontWeight="SemiBold"/>
+                        <TextBlock Text="👤👤" FontSize="50" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Baza Klientów" FontSize="18"/>
                     </StackPanel>
                 </Button>
-
             </UniformGrid>
         </Border>
 
         <!-- PASEK STATUSU -->
         <StatusBar Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Background="#D3D3D3">
-            <StatusBarItem Content="16.04.2026"/>
+            <StatusBarItem x:Name="StatusDate" Content="DATA"/>
             <Separator/>
-            <StatusBarItem Content="J.KOWALSKI" HorizontalAlignment="Right"/>
+            <StatusBarItem x:Name="StatusUser" Content="LOGIN"/>
             <Separator/>
-            <StatusBarItem Content="14:53"/>
+            <StatusBarItem x:Name="StatusTime" Content="GODZINA" HorizontalAlignment="Right"/>
         </StatusBar>
     </Grid>
 </Window>

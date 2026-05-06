@@ -1,0 +1,140 @@
+﻿<Window x:Class="MP_Fenster_App.TechnologWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="FENSTER 1.0 - TECHNOLOG" Height="750" Width="1100"
+        WindowStartupLocation="CenterScreen" Background="#E0E0E0">
+
+    <Window.Resources>
+        <!-- Styl dla dużych kolorowych kafelków (Kwadratowe z zaokrągleniem) -->
+        <Style x:Key="TileButtonStyle" TargetType="Button">
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Black"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <!-- 0: Menu górne -->
+            <RowDefinition Height="*"/>
+            <!-- 1: Główna zawartość -->
+            <RowDefinition Height="30"/>
+            <!-- 2: Pasek statusu -->
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="40"/>
+            <!-- 0: Niebieski pasek boczny -->
+            <ColumnDefinition Width="220"/>
+            <!-- 1: Drzewo zleceń -->
+            <ColumnDefinition Width="*"/>
+            <!-- 2: Panel główny -->
+        </Grid.ColumnDefinitions>
+
+        <!-- MENU GÓRNE -->
+        <Menu Grid.Row="0" Grid.ColumnSpan="3" Background="#F0F0F0" Padding="5">
+            <MenuItem Header="Strona startowa"/>
+            <MenuItem Header="Opcje"/>
+            <MenuItem Header="Drukuj"/>
+            <MenuItem Header="Portal internetowy"/>
+            <MenuItem Header="Pomoc"/>
+            <MenuItem Header="Koniec" Click="BtnLogout_Click"/>
+        </Menu>
+
+        <!-- NIEBIESKI PIONOWY PASEK (Z tekstem) -->
+        <Border Grid.Row="1" Grid.Column="0" Background="#1E88E5">
+            <TextBlock Text="M+P  FENSTER  SOFTWARE  2026" Foreground="White" 
+                       FontWeight="Bold" FontSize="18" VerticalAlignment="Bottom" Margin="0,0,0,20">
+                <TextBlock.LayoutTransform>
+                    <RotateTransform Angle="-90"/>
+                </TextBlock.LayoutTransform>
+            </TextBlock>
+        </Border>
+
+        <!-- LISTA ZLECEŃ Z IKONAMI OSTRZEGAWCZYMI -->
+        <Border Grid.Row="1" Grid.Column="1" Background="White" BorderBrush="#CCCCCC" BorderThickness="0,0,1,0">
+            <StackPanel Margin="10">
+                <TextBlock Text="Ostatnie zlecenia" FontWeight="Bold" Margin="0,0,0,10"/>
+                <TreeView x:Name="TechOrdersTree" BorderThickness="0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- PANEL GŁÓWNY Z 6 KAFELKAMI (Układ 2x3) -->
+        <Border Grid.Row="1" Grid.Column="2" Background="#90AFC5" Margin="20" 
+                CornerRadius="10" BorderBrush="Black" BorderThickness="1">
+            <UniformGrid Columns="2" Rows="3" Margin="30">
+
+                <!-- 1. Nowe zlecenie -->
+                <Button Style="{StaticResource TileButtonStyle}" Background="#90EE90" Click="BtnNowe_Click">
+                    <StackPanel>
+                        <TextBlock Text="✎" FontSize="45" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Nowe zlecenie" FontSize="18" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- 2. Przegląd zleceń -->
+                <Button Style="{StaticResource TileButtonStyle}" Background="#FFD39B" Click="BtnPrzeglad_Click">
+                    <StackPanel>
+                        <TextBlock Text="田" FontSize="45" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Przegląd zleceń" FontSize="18" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- 3. Status zleceń (Błękitny) -->
+                <Button Style="{StaticResource TileButtonStyle}" Background="#99FFFF" Click="BtnStatus_Click">
+                    <StackPanel>
+                        <TextBlock Text="📁" FontSize="45" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Status zleceń" FontSize="18" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- 4. Status produkcji (Fioletowy) -->
+                <Button Style="{StaticResource TileButtonStyle}" Background="#B39DDB" Click="BtnProdukcja_Click">
+                    <StackPanel>
+                        <TextBlock Text="⚒" FontSize="45" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Status produkcji" FontSize="18" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- 5. Zlecenia do akceptacji (Czerwony) -->
+                <Button Style="{StaticResource TileButtonStyle}" Background="#FF7F7F" Click="BtnAkceptacja_Click">
+                    <StackPanel>
+                        <TextBlock Text="⚠" FontSize="45" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Zlecenia do akceptacji" FontSize="18" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- 6. Baza danych (Różowy) -->
+                <Button Style="{StaticResource TileButtonStyle}" Background="#FF99CC" Click="BtnBaza_Click">
+                    <StackPanel>
+                        <TextBlock Text="▦" FontSize="45" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Baza danych" FontSize="18" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+            </UniformGrid>
+        </Border>
+
+        <!-- PASEK STATUSU -->
+        <StatusBar Grid.Row="2" Grid.ColumnSpan="3" Background="#D3D3D3">
+            <StatusBarItem x:Name="StatusDate" Content="DATA"/>
+            <Separator/>
+            <StatusBarItem x:Name="StatusUser" Content="LOGIN"/>
+            <Separator/>
+            <StatusBarItem x:Name="StatusTime" Content="GODZINA" HorizontalAlignment="Right"/>
+        </StatusBar>
+    </Grid>
+</Window>

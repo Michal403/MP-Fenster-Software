@@ -30,31 +30,6 @@ namespace MP_Fenster_App
             Application.Current.Shutdown();
         }
 
-        // LOGIKA LOGOWANIA - Zostawiamy tylko tę wersję, która otwiera nowe okno
-        private void BtnZaloguj_Click(object sender, RoutedEventArgs e)
-        {
-            string login = TxtUser.Text;
-            string haslo = TxtPass.Text;
-
-            // Statyczne sprawdzenie danych
-            if (login == "admin" && haslo == "123")
-            {
-                // 1. Tworzymy instancję nowego okna (musisz je najpierw dodać do projektu!)
-                HandlowiecWindow oknoHandlowca = new HandlowiecWindow();
-
-                // 2. Pokazujemy nowe okno
-                oknoHandlowca.Show();
-
-                // 3. Zamykamy okno logowania
-                this.Close();
-            }
-            else
-            {
-                MessageBox.Show("Nieprawidłowe dane! Spróbuj: admin / 123", "Błąd logowania",
-                                MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
         // OBSŁUGA PLACEHOLDERÓW (Login)
         private void TxtUser_GotFocus(object sender, RoutedEventArgs e)
         {
@@ -97,14 +72,26 @@ namespace MP_Fenster_App
             string login = TxtUser.Text;
             string haslo = TxtPass.Text;
 
-            if (login == "admin" || login == "Michał") // Dodajmy Twoje imię do testów
+            // 1. Sprawdzamy Handlowca/Admina
+            if (login.ToLower() == "admin" || login.ToLower() == "michał" || login.ToLower() == "michal")
             {
-                // Przekazujemy login do konstruktora nowego okna
                 HandlowiecWindow oknoHandlowca = new HandlowiecWindow(login);
                 oknoHandlowca.Show();
                 this.Close();
             }
-            // ... reszta Twojego kodu erroru
+            // 2. JEŚLI NIE HANDLOWIEC, to sprawdzamy Technologa (używamy ELSE IF)
+            else if (login.ToLower() == "technolog")
+            {
+                TechnologWindow oknoTech = new TechnologWindow(login);
+                oknoTech.Show();
+                this.Close();
+            }
+            // 3. JEŚLI NIKT Z POWYŻSZYCH, to błąd
+            else
+            {
+                MessageBox.Show("Błędny login lub hasło!", "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
+
     }
 }
