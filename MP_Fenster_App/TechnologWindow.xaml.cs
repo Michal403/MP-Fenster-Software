@@ -45,8 +45,11 @@ namespace MP_Fenster_App
 
         // --- OBSŁUGA PRZYCISKÓW TECHNOLOGA ---
 
-        private void BtnNowe_Click(object sender, RoutedEventArgs e) =>
-            MessageBox.Show("Otwieranie modułu: Nowe zlecenie technologiczne");
+        private void BtnNowe_Click(object sender, RoutedEventArgs e)
+        {
+            NoweZlecenieWindow okno = new NoweZlecenieWindow(_user);
+            okno.ShowDialog(); // Otwiera okno kreatora
+        }
 
         private void BtnPrzeglad_Click(object sender, RoutedEventArgs e) =>
             MessageBox.Show("Przegląd zleceń w toku...");

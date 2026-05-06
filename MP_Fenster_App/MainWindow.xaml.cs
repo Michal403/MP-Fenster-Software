@@ -95,7 +95,7 @@ namespace MP_Fenster_App
 
                         if (result != null)
                         {
-                            string rola = result.ToString();
+                            string rola = result?.ToString() ?? "";
 
                             if (rola == "Handlowiec")
                             {

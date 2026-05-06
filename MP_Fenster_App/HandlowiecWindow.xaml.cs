@@ -51,7 +51,8 @@ namespace MP_Fenster_App
 
         private void BtnNowe_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Otwieranie formularza nowego zlecenia...");
+            NoweZlecenieWindow okno = new NoweZlecenieWindow(_zalogowanyUser);
+            okno.ShowDialog(); // Otwiera okno kreatora
         }
 
         private void BtnPrzeglad_Click(object sender, RoutedEventArgs e)
