@@ -70,55 +70,30 @@ namespace MP_Fenster_App
         }
         private void BtnZaloguj_Click(object sender, RoutedEventArgs e)
         {
-            string loginInput = TxtUser.Text;
+            string loginInput = TxtUser.Text.Trim().ToLower();
             string hasloInput = TxtPass.Text;
 
-            // To jest klucz do Twojej bazy na Azure
-            string connectionString = "TUTAJ_WKLEJ_CONNECTION_STRING";
-
-            try
+            // --- UŻYTKOWNIK: MICHAŁ ---
+            if ((loginInput == "michał" || loginInput == "michal") && hasloInput == "michal123")
             {
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-
-                    // Szukamy roli użytkownika w bazie
-                    string query = "SELECT Rola FROM Uzytkownicy WHERE Login = @login AND Haslo = @haslo";
-
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
-                        // Parametry chronią przed atakami (SQL Injection)
-                        command.Parameters.AddWithValue("@login", loginInput);
-                        command.Parameters.AddWithValue("@haslo", hasloInput);
-
-                        object result = command.ExecuteScalar();
-
-                        if (result != null)
-                        {
-                            string rola = result?.ToString() ?? "";
-
-                            if (rola == "Handlowiec")
-                            {
-                                new HandlowiecWindow(loginInput).Show();
-                            }
-                            else if (rola == "Technolog")
-                            {
-                                new TechnologWindow(loginInput).Show();
-                            }
-
-                            this.Close();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Błędny login lub hasło!", "Błąd Bazy Azure");
-                        }
-                    }
-                }
+                new HandlowiecWindow(loginInput).Show();
+                this.Close();
             }
-            catch (Exception ex)
+            // --- UŻYTKOWNIK: DAWID ---
+            else if (loginInput == "dawid" && hasloInput == "dawid123")
             {
-                // Jeśli np. zapomnisz dodać IP do Firewall'a w Azure, tutaj wyskoczy błąd
-                MessageBox.Show("Problem z połączeniem: " + ex.Message);
+                new TechnologWindow(loginInput).Show();
+                this.Close();
+            }
+            // --- UŻYTKOWNIK: ADMIN ---
+            else if (loginInput == "admin" && hasloInput == "admin")
+            {
+                new HandlowiecWindow(loginInput).Show();
+                this.Close();
+            }
+            else
+            {
+                MessageBox.Show("Błędny login lub hasło!", "Błąd logowania");
             }
         }
 
