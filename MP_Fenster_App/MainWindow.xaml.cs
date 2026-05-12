@@ -1,13 +1,7 @@
-﻿using System.Text;
+﻿using System;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using System.Windows.Input;
 using Microsoft.Data.SqlClient;
 
 namespace MP_Fenster_App
@@ -31,7 +25,7 @@ namespace MP_Fenster_App
             Application.Current.Shutdown();
         }
 
-        // OBSŁUGA PLACEHOLDERÓW (Login)
+        // OBSŁUGA PLACEHOLDERÓW (Tylko dla Loginu - TextBox)
         private void TxtUser_GotFocus(object sender, RoutedEventArgs e)
         {
             if (TxtUser.Text == "wpisz login...")
@@ -50,31 +44,19 @@ namespace MP_Fenster_App
             }
         }
 
-        // OBSŁUGA PLACEHOLDERÓW (Hasło)
-        private void TxtPass_GotFocus(object sender, RoutedEventArgs e)
-        {
-            if (TxtPass.Text == "wpisz hasło...")
-            {
-                TxtPass.Text = "";
-                TxtPass.Foreground = Brushes.Black;
-            }
-        } 
+        // UWAGA: Metody TxtPass_GotFocus i TxtPass_LostFocus zostały usunięte, 
+        // ponieważ PasswordBox nie współpracuje z nimi w ten sposób (zamieniałby placeholder na kropki).
 
-        private void TxtPass_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(TxtPass.Text))
-            {
-                TxtPass.Text = "wpisz hasło...";
-                TxtPass.Foreground = Brushes.Gray;
-            }
-        }
         private void BtnZaloguj_Click(object sender, RoutedEventArgs e)
         {
-            string loginInput = TxtUser.Text;
-            string hasloInput = TxtPass.Text;
+            // Pobieramy dane z pól
+            string loginInput = TxtUser.Text.Trim();
 
-            // To jest klucz do Twojej bazy na Azure
-            string connectionString = "TUTAJ_WKLEJ_CONNECTION_STRING";
+            // KLUCZOWA ZMIANA: Pobieramy hasło z PasswordBox używając .Password
+            string hasloInput = TxtPass.Password;
+
+            // Połączenie do Twojego Dockera
+            string connectionString = "Server=localhost;Database=SeaSharkDB;User Id=sa;Password=zaq1@WSX;TrustServerCertificate=True;";
 
             try
             {
@@ -82,12 +64,10 @@ namespace MP_Fenster_App
                 {
                     connection.Open();
 
-                    // Szukamy roli użytkownika w bazie
                     string query = "SELECT Rola FROM Uzytkownicy WHERE Login = @login AND Haslo = @haslo";
 
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
-                        // Parametry chronią przed atakami (SQL Injection)
                         command.Parameters.AddWithValue("@login", loginInput);
                         command.Parameters.AddWithValue("@haslo", hasloInput);
 
@@ -95,6 +75,7 @@ namespace MP_Fenster_App
 
                         if (result != null)
                         {
+                            // Naprawiamy ostrzeżenie o nullu
                             string rola = result?.ToString() ?? "";
 
                             if (rola == "Handlowiec")
@@ -105,22 +86,25 @@ namespace MP_Fenster_App
                             {
                                 new TechnologWindow(loginInput).Show();
                             }
+                            else if (rola == "Admin")
+                            {
+                                MessageBox.Show("Witaj Adminie! Masz pełne uprawnienia.", "Panel Administratora");
+                                new HandlowiecWindow(loginInput).Show();
+                            }
 
                             this.Close();
                         }
                         else
                         {
-                            MessageBox.Show("Błędny login lub hasło!", "Błąd Bazy Azure");
+                            MessageBox.Show("Błędny login lub hasło!", "Błąd logowania SeaShark");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Jeśli np. zapomnisz dodać IP do Firewall'a w Azure, tutaj wyskoczy błąd
-                MessageBox.Show("Problem z połączeniem: " + ex.Message);
+                MessageBox.Show("Problem z połączeniem (Docker): " + ex.Message, "Błąd Bazy");
             }
         }
-
     }
 }

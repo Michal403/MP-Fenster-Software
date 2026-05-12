@@ -48,12 +48,14 @@
                 <!-- Pole Hasła -->
                 <TextBlock Text="Hasło:" Foreground="White" Margin="0,0,0,5" FontSize="14"/>
                 <Border Background="White" CornerRadius="8" Margin="0,0,0,30">
-                    <TextBox x:Name="TxtPass" 
-                             GotFocus="TxtPass_GotFocus" 
-                             LostFocus="TxtPass_LostFocus" 
-                             Height="45" Background="Transparent" BorderThickness="0" 
-                             VerticalContentAlignment="Center" Padding="10,0" FontSize="14" 
-                             Foreground="Gray" Text="wpisz hasło..."/>
+                    <PasswordBox x:Name="TxtPass" 
+                 Height="45" 
+                 Background="Transparent" 
+                 BorderThickness="0" 
+                 VerticalContentAlignment="Center" 
+                 Padding="10,0" 
+                 FontSize="14" 
+                 Foreground="Black"/>
                 </Border>
 
                 <!-- Przyciski -->
@@ -73,8 +75,16 @@
                         </Button.Resources>
                     </Button>
 
-                    <Button Grid.Column="2" Content="Zaloguj" Height="40" Click="BtnZaloguj_Click"
-                            Background="#2196F3" Foreground="White" FontWeight="Bold" BorderThickness="0">
+                    <Button Grid.Column="2" 
+        Content="Zaloguj" 
+        Height="40" 
+        Click="BtnZaloguj_Click"
+        IsDefault="True" 
+        Cursor="Hand"
+        Background="#2196F3" 
+        Foreground="White" 
+        FontWeight="Bold" 
+        BorderThickness="0">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="8"/>
