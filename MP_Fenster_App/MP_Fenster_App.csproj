@@ -22,4 +22,8 @@
     </Resource>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Ikony\" />
+  </ItemGroup>
+
 </Project>
