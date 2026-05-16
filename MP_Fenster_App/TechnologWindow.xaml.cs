@@ -26,7 +26,6 @@ namespace MP_Fenster_App
             TechOrdersTree.Items.Clear();
             TreeViewItem root = new TreeViewItem { Header = "Zlecenia", IsExpanded = true };
 
-            // Symulacja danych z obrazka (Zlecenia z ikonami)
             root.Items.Add(new TreeViewItem { Header = "Zlecenie 45689" });
             root.Items.Add(new TreeViewItem { Header = "Zlecenie 45690" });
             root.Items.Add(new TreeViewItem { Header = "⚠ Zlecenie 45720 (Błąd wymiarów)" });
@@ -48,22 +47,39 @@ namespace MP_Fenster_App
         private void BtnNowe_Click(object sender, RoutedEventArgs e)
         {
             NoweZlecenieWindow okno = new NoweZlecenieWindow(_user);
-            okno.ShowDialog(); // Otwiera okno kreatora
+            okno.Show(); // Otwarte bez blokowania wątku interfejsu
         }
 
-        private void BtnPrzeglad_Click(object sender, RoutedEventArgs e) =>
-            MessageBox.Show("Przegląd zleceń w toku...");
+        // KAFELEK 2: Przegląd wszystkich zamówień w bazie Docker
+        private void BtnPrzeglad_Click(object sender, RoutedEventArgs e)
+        {
+            // Przekazujemy rolę "Technolog" - system pominie klauzulę WHERE i pokaże rejestr globalny
+            StatusZlecen oknoRejestru = new StatusZlecen(_user, "Technolog");
+            oknoRejestru.Show();
+        }
 
-        private void BtnStatus_Click(object sender, RoutedEventArgs e) =>
-            MessageBox.Show("Sprawdzanie statusów dokumentacji...");
+        // KAFELEK 3: Statusy dokumentacji technicznej
+        private void BtnStatus_Click(object sender, RoutedEventArgs e)
+        {
+            StatusZlecen oknoRejestru = new StatusZlecen(_user, "Technolog");
+            oknoRejestru.Show();
+        }
 
-        private void BtnProdukcja_Click(object sender, RoutedEventArgs e) =>
-            MessageBox.Show("Przesyłanie zleceń na produkcję...");
+        private void BtnProdukcja_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Moduł integracji z linią produkcyjną (Generowanie plików sterujących CNC).", "Status produkcji");
+        }
 
-        private void BtnAkceptacja_Click(object sender, RoutedEventArgs e) =>
-            MessageBox.Show("Lista zleceń wymagających zatwierdzenia technicznego");
+        // KAFELEK 5: Przekierowanie do tego samego rejestru globalnego w celu weryfikacji i zdjęcia blokad
+        private void BtnAkceptacja_Click(object sender, RoutedEventArgs e)
+        {
+            StatusZlecen oknoRejestru = new StatusZlecen(_user, "Technolog");
+            oknoRejestru.Show();
+        }
 
-        private void BtnBaza_Click(object sender, RoutedEventArgs e) =>
-            MessageBox.Show("Łączenie z bazą danych profili i okuć...");
+        private void BtnBaza_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Słowniki techniczne: Edycja tabel [SystemyProfilowe], [PakietySzybowe], [KlamkiKatalog] prosto z poziomu uprawnień Technologa.", "Baza danych");
+        }
     }
 }

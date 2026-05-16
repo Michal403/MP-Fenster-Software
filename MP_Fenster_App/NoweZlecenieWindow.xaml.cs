@@ -18,6 +18,9 @@ namespace MP_Fenster_App
         private bool _blokadaOdswiezania = false;
         private DispatcherTimer _timer = null!;
 
+        // POPRAWKA: Pole śledzące ID edytowanego dokumentu z bazy
+        private int? _obecneIdZlecenia = null;
+
         public PozycjaZlecenia? WybranaPozycja => GridPozycje?.SelectedItem as PozycjaZlecenia;
 
         public NoweZlecenieWindow(string wprowadzilLogin)
@@ -255,7 +258,7 @@ namespace MP_Fenster_App
             TxtOznaczRamka.Text = pos.TypRamki;
             TxtOznaczWariantKolor.Text = pos.WariantUkladuKoloru;
             TxtOznaczKolorOkleiny.Text = pos.KolorOkleiny;
-            TxtOznaczUszczelka.Text = pos.KolorUszczelki;
+            TxtOznaczUszczelka.Text = pos.FormatUszczelka(); // Secure extraction format fallback
             TxtOznaczBaza.Text = pos.KolorBazy;
             TxtOznaczKlasa.Text = pos.KlasaBezpieczenstwa;
             TxtOznaczWariant.Text = pos.WariantOkuc;
@@ -365,7 +368,6 @@ namespace MP_Fenster_App
             }
         }
 
-        // NAPRAWIONE: Zmiana sygnatury na RoutedEventArgs e (Zamyka błąd CS0123)
         private void OpcjeFinansowe_SelectionChanged(object sender, RoutedEventArgs e) => PrzeliczFinanseZlecenia();
 
         private void CmbKlienci_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -379,7 +381,6 @@ namespace MP_Fenster_App
                 PasekNarzedzi.Visibility = PasekNarzedzi.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        // NAPRAWIONE: Metoda podglądu pozycji w pełni zadeklarowana (Zamyka błędy CS1061)
         private void BtnPodgladPozycji_Click(object sender, RoutedEventArgs e)
         {
             if (WybranaPozycja != null)
@@ -546,6 +547,7 @@ namespace MP_Fenster_App
             }
         }
 
+        // POPRAWKA: Prawdziwy i poprawny zapis transakcyjny RAW SQL obsługujący tryb UPDATE i INSERT
         private void ZapiszZlecenieDoBazySystemu()
         {
             if (ListaPozycji.Count == 0)
@@ -559,11 +561,10 @@ namespace MP_Fenster_App
                 using (SqlConnection cn = new SqlConnection(_connString))
                 {
                     cn.Open();
-                    using (SqlTransaction tx = cn.BeginTransaction()) // Zapewnienie atomowości zapisu
+                    using (SqlTransaction tx = cn.BeginTransaction())
                     {
                         try
                         {
-                            // 1. Pobieramy IdUzytkownika na podstawie zalogowanego loginu
                             int idUzytkownika = 1;
                             string sqlUser = "SELECT IdUzytkownika FROM Uzytkownicy WHERE UPPER(Login) = @login";
                             using (SqlCommand cmdUser = new SqlCommand(sqlUser, cn, tx))
@@ -573,40 +574,77 @@ namespace MP_Fenster_App
                                 if (resUser != null) idUzytkownika = Convert.ToInt32(resUser);
                             }
 
-                            // PANCERNE WYCIĄGANIE TEKSTU Z KONTROLEK WPF (Zapobiega błędom rzutowania obiektów)
                             string transportText = (CmbTransport.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "NIE";
-                            string obszarText = (CmbObszar.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Polska";
                             string montazText = (CmbMontaz.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "NIE";
+                            string obszarText = (CmbObszar.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Polska";
                             string typText = (CmbTypZlecenia.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "N";
-                            string typChar = typText.Contains(" - ") ? typText.Split(' ')[0] : typText.Substring(0, 1);
+                            string typChar = typText.Contains(" - ") ? typText.Split(' ')[0] : (typText.Length > 0 ? typText.Substring(0, 1) : "N");
 
-                            // 2. Wstawiamy nagłówek do tabeli Zlecenia
-                            string sqlHeader = @"INSERT INTO Zlecenia 
-                        (NumerZlecenia, IdKlienta, IdUzytkownika, DataWprowadzenia, TerminPreferowany, Obszar, CzyTransport, CzyMontaz, TypZlecenia, StatusZlecenia) 
-                        VALUES (@nr, @klient, @user, GETDATE(), @termin, @obszar, @trans, @montaz, @typ, 'OFERTA');
-                        SELECT SCOPE_IDENTITY();";
+                            int idZleceniaDoPozycji = 0;
 
-                            int noweIdZlecenia = 0;
-                            using (SqlCommand cmdHeader = new SqlCommand(sqlHeader, cn, tx))
+                            if (_obecneIdZlecenia.HasValue)
                             {
-                                cmdHeader.Parameters.AddWithValue("@nr", TxtZlecenie.Text);
-                                cmdHeader.Parameters.AddWithValue("@klient", string.IsNullOrEmpty(TxtIdKlienta.Text) ? 1 : Convert.ToInt32(TxtIdKlienta.Text));
-                                cmdHeader.Parameters.AddWithValue("@user", idUzytkownika);
-                                cmdHeader.Parameters.AddWithValue("@termin", DpTermin.SelectedDate ?? DateTime.Now.AddDays(14));
+                                // TRYB EDYCJI: Aktualizacja istniejącego rekordu nagłówka oferty
+                                idZleceniaDoPozycji = _obecneIdZlecenia.Value;
+                                string sqlUpdateHeader = @"UPDATE Zlecenia SET 
+                                    IdKlienta = @klient, 
+                                    IdUzytkownika = @user, 
+                                    TerminPreferowany = @termin, 
+                                    Obszar = @obszar, 
+                                    CzyTransport = @trans, 
+                                    CzyMontaz = @montaz, 
+                                    TypZlecenia = @typ 
+                                    WHERE IdZlecenia = @idZlec";
 
-                                // Zsynchronizowanie typów danych z Dockerem
-                                cmdHeader.Parameters.AddWithValue("@obszar", obszarText);
-                                cmdHeader.Parameters.AddWithValue("@trans", transportText == "TAK"); // Mapuje bool bezpośrednio na bit bazy
-                                cmdHeader.Parameters.AddWithValue("@montaz", montazText == "TAK");   // Mapuje bool bezpośrednio na bit bazy
-                                cmdHeader.Parameters.AddWithValue("@typ", typChar);
+                                using (SqlCommand cmdUpdate = new SqlCommand(sqlUpdateHeader, cn, tx))
+                                {
+                                    cmdUpdate.Parameters.AddWithValue("@idZlec", idZleceniaDoPozycji);
+                                    cmdUpdate.Parameters.AddWithValue("@klient", string.IsNullOrEmpty(TxtIdKlienta.Text) ? 1 : Convert.ToInt32(TxtIdKlienta.Text));
+                                    cmdUpdate.Parameters.AddWithValue("@user", idUzytkownika);
+                                    cmdUpdate.Parameters.AddWithValue("@termin", DpTermin.SelectedDate ?? DateTime.Now.AddDays(14));
+                                    cmdUpdate.Parameters.AddWithValue("@obszar", obszarText);
+                                    cmdUpdate.Parameters.AddWithValue("@trans", transportText == "TAK");
+                                    cmdUpdate.Parameters.AddWithValue("@montaz", montazText == "TAK");
+                                    cmdUpdate.Parameters.AddWithValue("@typ", typChar);
 
-                                noweIdZlecenia = Convert.ToInt32(cmdHeader.ExecuteScalar());
+                                    cmdUpdate.ExecuteNonQuery();
+                                }
+
+                                // Czyszczenie starych wierszy powiązanych z tym IdZlecenia przed wgraniem nowego stanu koszyka okien
+                                string sqlDeleteLines = "DELETE FROM PozycjeZlecenia WHERE IdZlecenia = @idZlec";
+                                using (SqlCommand cmdDel = new SqlCommand(sqlDeleteLines, cn, tx))
+                                {
+                                    cmdDel.Parameters.AddWithValue("@idZlec", idZleceniaDoPozycji);
+                                    cmdDel.ExecuteNonQuery();
+                                }
+                            }
+                            else
+                            {
+                                // TRYB NOWY: Wstawienie nowego dokumentu i pobranie wygenerowanego klucza głównego
+                                string sqlHeader = @"INSERT INTO Zlecenia 
+                                    (NumerZlecenia, IdKlienta, IdUzytkownika, DataWprowadzenia, TerminPreferowany, Obszar, CzyTransport, CzyMontaz, TypZlecenia, StatusZlecenia) 
+                                    VALUES (@nr, @klient, @user, GETDATE(), @termin, @obszar, @trans, @montaz, @typ, 'OFERTA');
+                                    SELECT SCOPE_IDENTITY();";
+
+                                using (SqlCommand cmdHeader = new SqlCommand(sqlHeader, cn, tx))
+                                {
+                                    cmdHeader.Parameters.AddWithValue("@nr", TxtZlecenie.Text);
+                                    cmdHeader.Parameters.AddWithValue("@klient", string.IsNullOrEmpty(TxtIdKlienta.Text) ? 1 : Convert.ToInt32(TxtIdKlienta.Text));
+                                    cmdHeader.Parameters.AddWithValue("@user", idUzytkownika);
+                                    cmdHeader.Parameters.AddWithValue("@termin", DpTermin.SelectedDate ?? DateTime.Now.AddDays(14));
+                                    cmdHeader.Parameters.AddWithValue("@obszar", obszarText);
+                                    cmdHeader.Parameters.AddWithValue("@trans", transportText == "TAK");
+                                    cmdHeader.Parameters.AddWithValue("@montaz", montazText == "TAK");
+                                    cmdHeader.Parameters.AddWithValue("@typ", typChar);
+
+                                    idZleceniaDoPozycji = Convert.ToInt32(cmdHeader.ExecuteScalar());
+                                }
                             }
 
-                            // 3. Wstawiamy pozycje do tabeli PozycjeZlecenia
+                            // Zrzut wszystkich linii konfiguratora do powiązanej tabeli relacyjnej
                             string sqlLine = @"INSERT INTO PozycjeZlecenia 
-                        (IdZlecenia, NrProdukcyjny, Sztuk, Szerokosc, Wysokosc, CenaJednostkowa, Uwagi, StatusTechniczny) 
-                        VALUES (@idZlec, @nrProd, @szt, @szer, @wys, @cena, @uwagi, @statusTech)";
+                                (IdZlecenia, NrProdukcyjny, Sztuk, Szerokosc, Wysokosc, CenaJednostkowa, Uwagi, StatusTechniczny) 
+                                VALUES (@idZlec, @nrProd, @szt, @szer, @wys, @cena, @uwagi, @statusTech)";
 
                             foreach (var pos in ListaPozycji)
                             {
@@ -617,15 +655,13 @@ namespace MP_Fenster_App
                                     if (pos.Wypelnienie == "3-48") cenaBazowa += 130;
                                     double cenaJednostkowa = m2 * cenaBazowa;
 
-                                    cmdLine.Parameters.AddWithValue("@idZlec", noweIdZlecenia);
+                                    cmdLine.Parameters.AddWithValue("@idZlec", idZleceniaDoPozycji);
                                     cmdLine.Parameters.AddWithValue("@nrProd", pos.NrProd);
                                     cmdLine.Parameters.AddWithValue("@szt", pos.Szt);
                                     cmdLine.Parameters.AddWithValue("@szer", pos.Szerokosc);
                                     cmdLine.Parameters.AddWithValue("@wys", pos.Wysokosc);
                                     cmdLine.Parameters.AddWithValue("@cena", cenaJednostkowa);
                                     cmdLine.Parameters.AddWithValue("@uwagi", $"Rama: {pos.SystemOkna}, Okleina: {pos.KolorOkleiny}");
-
-                                    // PEŁNA POPRAWKA: Wpisujemy liczby INT (1 = ZATWIERDZONE, 0 = BLOKADA)
                                     cmdLine.Parameters.AddWithValue("@statusTech", pos.StatusZablokowany ? 0 : 1);
 
                                     cmdLine.ExecuteNonQuery();
@@ -662,6 +698,85 @@ namespace MP_Fenster_App
         private void BtnUwagi_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Uwagi.");
         private void BtnSpecMat_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Specyfikacja.");
         private void BtnKorektaCeny_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Korekta.");
+
+        // POPRAWKA: Rejestrowanie IdZlecenia podczas otwierania z panelu przeglądu
+        public void WczytajIstniejaceZlecenieZBase(int idZlecenia)
+        {
+            _obecneIdZlecenia = idZlecenia;
+            try
+            {
+                using (SqlConnection cn = new SqlConnection(_connString))
+                {
+                    cn.Open();
+
+                    // 1. Ściągamy dane nagłówka, aby uzupełnić kontrolki
+                    string sqlHeader = "SELECT NumerZlecenia, IdKlienta, Obszar, CzyTransport, CzyMontaz FROM Zlecenia WHERE IdZlecenia = @id";
+                    using (SqlCommand cmdH = new SqlCommand(sqlHeader, cn))
+                    {
+                        cmdH.Parameters.AddWithValue("@id", idZlecenia);
+                        using (SqlDataReader drH = cmdH.ExecuteReader())
+                        {
+                            if (drH.Read())
+                            {
+                                TxtZlecenie.Text = drH["NumerZlecenia"].ToString();
+                                TxtIdKlienta.Text = drH["IdKlienta"].ToString();
+                                CmbKlienci.SelectedValue = drH["IdKlienta"];
+                                CmbObszar.Text = drH["Obszar"].ToString();
+                                CmbTransport.Text = Convert.ToBoolean(drH["CzyTransport"]) ? "TAK" : "NIE";
+                                CmbMontaz.Text = Convert.ToBoolean(drH["CzyMontaz"]) ? "TAK" : "NIE";
+                            }
+                        }
+                    }
+
+                    // 2. Ściągamy wszystkie linie z tabeli PozycjeZlecenia za pomocą surowego zapytania
+                    string sqlLines = "SELECT * FROM PozycjeZlecenia WHERE IdZlecenia = @id ORDER BY IdPozycji ASC";
+                    using (SqlCommand cmdL = new SqlCommand(sqlLines, cn))
+                    {
+                        cmdL.Parameters.AddWithValue("@id", idZlecenia);
+                        using (SqlDataReader drL = cmdL.ExecuteReader())
+                        {
+                            ListaPozycji.Clear();
+                            int licznik = 1;
+                            while (drL.Read())
+                            {
+                                string uwagiZBase = drL["Uwagi"].ToString() ?? "";
+                                string systemOkna = uwagiZBase.Contains("System ramy: ") ? uwagiZBase.Split(',')[0].Replace("System ramy: ", "") : "Schuco Living MD";
+
+                                ListaPozycji.Add(new PozycjaZlecenia
+                                {
+                                    Poz = licznik.ToString(),
+                                    NrProd = drL["NrProdukcyjny"].ToString() ?? "F100",
+                                    Szt = Convert.ToInt32(drL["Sztuk"]),
+                                    Szerokosc = Convert.ToInt32(drL["Szerokosc"]),
+                                    Wysokosc = Convert.ToInt32(drL["Wysokosc"]),
+                                    SystemOkna = systemOkna,
+                                    Wypelnienie = "2-24",
+                                    TypRamki = "ALU",
+                                    WariantUkladuKoloru = "W-W",
+                                    KolorOkleiny = "W",
+                                    KolorUszczelki = "SZARY",
+                                    KolorBazy = "Bialy",
+                                    KlasaBezpieczenstwa = "Standard",
+                                    WariantOkuc = "UR-P",
+                                    Zawiasy = "Standard",
+                                    TypKlamki = "Klamka aluminiowa Standard",
+                                    KolorKlamki = "Bialy",
+                                    ListwaPodparapetowa = "TAK",
+                                    Oznaczenie = $"{drL["NrProdukcyjny"]} / Zrzut",
+                                    StatusZablokowany = (drL["StatusTechniczny"].ToString() == "0")
+                                });
+                                licznik++;
+                            }
+                        }
+                    }
+                    PrzeliczFinanseZlecenia();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Błąd krytyczny odtwarzania koszyka zlecenia: " + ex.Message, "Błąd Re-Open");
+            }
+        }
     }
 
     public class PozycjaZlecenia : INotifyPropertyChanged
@@ -694,6 +809,9 @@ namespace MP_Fenster_App
         public string TypKlamki { get => _typKlamki; set => SetProperty(ref _typKlamki, value); }
         public string KolorKlamki { get => _kolorKlamki; set => SetProperty(ref _kolorKlamki, value); }
         public string ListwaPodparapetowa { get => _listwaPodparapetowa; set => SetProperty(ref _listwaPodparapetowa, value); }
+
+        // Metoda pomocnicza zapobiegająca nullowi przy wyciąganiu tekstu opisowego uszczelek
+        public string FormatUszczelka() => string.IsNullOrEmpty(KolorUszczelki) ? "SZARY" : KolorUszczelki;
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? p = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(p));

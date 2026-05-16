@@ -2,69 +2,31 @@
 using System.Data;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Microsoft.Data.SqlClient;
 
 namespace MP_Fenster_App
 {
-    public partial class StatusZlecenWindow : Window
+    public partial class StatusZlecen : Window
     {
         private readonly string _connString = "Server=localhost;Database=SeaSharkDB;User Id=sa;Password=zaq1@WSX;TrustServerCertificate=True;";
-        private string _zalogowanyUzytkownik;
-        private int _idUzytkownika = 0;
-        private string _rolaUzytkownika = "Handlowiec";
+        private string _username;
+        private string _role;
 
-        public StatusZlecenWindow(string loginZalogowanego)
+        public StatusZlecen(string zalogowanyUser, string rolaUzytkownika)
         {
             InitializeComponent();
-            _zalogowanyUzytkownik = loginZalogowanego;
-            TxtPracownikInfo.Text = _zalogowanyUzytkownik.ToUpper();
+            _username = zalogowanyUser;
+            _role = rolaUzytkownika;
 
-            OkreślRolęIUruchomRejestr();
+            TxtOperator.Text = _username.ToUpper();
+            TxtRola.Text = _role.ToUpper();
+
+            LadujZleceniaZBase();
         }
 
-        // Pobieranie Roli bezpośrednio z bazy danych w celu weryfikacji uprawnień
-        private void OkreślRolęIUruchomRejestr()
-        {
-            try
-            {
-                using (SqlConnection cn = new SqlConnection(_connString))
-                {
-                    cn.Open();
-                    string sql = "SELECT IdUzytkownika, Rola FROM Uzytkownicy WHERE UPPER(Login) = @login";
-                    using (SqlCommand cmd = new SqlCommand(sql, cn))
-                    {
-                        cmd.Parameters.AddWithValue("@login", _zalogowanyUzytkownik.ToUpper());
-                        using (SqlDataReader dr = cmd.ExecuteReader())
-                        {
-                            if (dr.Read())
-                            {
-                                _idUzytkownika = Convert.ToInt32(dr["IdUzytkownika"]);
-                                _rolaUzytkownika = dr["Rola"].ToString() ?? "Handlowiec";
-                            }
-                        }
-                    }
-                }
-
-                TxtRolaInfo.Text = _rolaUzytkownika.ToUpper();
-
-                // Dynamiczna zmiana koloru paska roli w zależności od uprawnień
-                if (_rolaUzytkownika.ToLower() == "technolog")
-                {
-                    BrdrRola.Background = System.Windows.Media.Brushes.DarkGoldenrod;
-                }
-
-                LadujRejestrZlecenBazy();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Błąd autoryzacji profilu użytkownika: " + ex.Message, "Błąd", MessageBoxButton.OK, MessageBoxImage.Error);
-                TxtRolaInfo.Text = "OFFLINE MODE";
-                LadujRejestrZlecenBazy();
-            }
-        }
-
-        // Prawdziwe, bezlitosne i wydajne pobieranie danych za pomocą RAW SQL
-        private void LadujRejestrZlecenBazy()
+        // WYMAGANIE: Handlowiec widzi tylko swoje, Technolog/Admin widzi wszystko prosto z Dockera
+        private void LadujZleceniaZBase()
         {
             try
             {
@@ -72,34 +34,26 @@ namespace MP_Fenster_App
                 {
                     cn.Open();
 
-                    // Bazowy SQL łączący Zlecenia, Klientów i twórców ofert
-                    string sql = @"SELECT 
-                                    Z.IdZlecenia, 
-                                    Z.NumerZlecenia, 
-                                    K.NazwaKlienta, 
-                                    K.NIP, 
-                                    U.Login AS LoginUzytkownika, 
-                                    Z.DataWprowadzenia, 
-                                    Z.TerminPreferowany, 
-                                    Z.Obszar, 
-                                    Z.StatusZlecenia 
-                                   FROM Zlecenia Z
-                                   INNER JOIN Klienci K ON Z.IdKlienta = K.IdKlienta
-                                   INNER JOIN Uzytkownicy U ON Z.IdUzytkownika = U.IdUzytkownika";
+                    // Budowa zapytania złączeniowego RAW SQL opartego na Twoim diagramie ERD
+                    string sql = @"SELECT z.IdZlecenia, z.NumerZlecenia, k.NazwaKlienta, 
+                                   u.Login AS Wprowadzil, z.DataWprowadzenia, z.Obszar, z.StatusZlecenia 
+                                   FROM Zlecenia z
+                                   JOIN Klienci k ON z.IdKlienta = k.IdKlienta
+                                   JOIN Uzytkownicy u ON z.IdUzytkownika = u.IdUzytkownika";
 
-                    // ZASADA BEZPIECZEŃSTWA: Jeśli zalogowany jest Handlowiec, doklejamy filtr WHERE i pokazujemy tylko jego rekordy
-                    if (_rolaUzytkownika.ToLower() == "handlowiec")
+                    // Jeśli rola to Handlowiec, docinamy listę tylko do jego ID
+                    if (_role.ToLower() == "handlowiec")
                     {
-                        sql += " WHERE Z.IdUzytkownika = @idUser";
+                        sql += " WHERE UPPER(u.Login) = @login";
                     }
 
-                    sql += " ORDER BY Z.IdZlecenia DESC";
+                    sql += " ORDER BY z.DataWprowadzenia DESC";
 
                     using (SqlCommand cmd = new SqlCommand(sql, cn))
                     {
-                        if (_rolaUzytkownika.ToLower() == "handlowiec")
+                        if (_role.ToLower() == "handlowiec")
                         {
-                            cmd.Parameters.AddWithValue("@idUser", _idUzytkownika);
+                            cmd.Parameters.AddWithValue("@login", _username.ToUpper());
                         }
 
                         using (SqlDataReader dr = cmd.ExecuteReader())
@@ -113,80 +67,35 @@ namespace MP_Fenster_App
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Błąd synchronizacji rejestru z chmurą Docker: " + ex.Message, "Błąd SQL SQLServer", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Błąd pobierania rejestru zleceń z kontenera SQL: " + ex.Message, "Blokada Odczytu");
             }
         }
 
-        // REAKCJA: Kliknięcie wiersza w głównej tabeli ładuje surowym SQL pozycje składowe zlecenia
-        private void GridZlecenia_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void UruchomKonfiguratorDlaZaznaczonego()
         {
-            DataRowView? selectedRow = GridZlecenia.SelectedItem as DataRowView;
-            if (selectedRow == null)
+            if (GridZlecenia.SelectedItem == null)
             {
-                GridPozycjeZlecenia.ItemsSource = null;
-                TxtUwagiPozycji.Text = string.Empty;
+                MessageBox.Show("Wybierz zlecenie z tabeli, aby otworzyć je w konfiguratorze.", "Info");
                 return;
             }
 
-            int idZlecenia = Convert.ToInt32(selectedRow["IdZlecenia"]);
+            DataRowView row = (DataRowView)GridZlecenia.SelectedItem;
+            int idZlecenia = Convert.ToInt32(row["IdZlecenia"]);
+            string wprowadzilLogin = row["Wprowadzil"].ToString() ?? _username;
 
-            try
-            {
-                using (SqlConnection cn = new SqlConnection(_connString))
-                {
-                    cn.Open();
-                    string sql = @"SELECT IdPozycji, NrProdukcyjny, Sztuk, Szerokosc, Wysokosc, CenaJednostkowa, Uwagi, StatusTechniczny 
-                                   FROM PozycjeZlecenia 
-                                   WHERE IdZlecenia = @idZlec 
-                                   ORDER BY IdPozycji ASC";
+            // Odpalamy kreator, przekazując login oraz IdZlecenia, by wczytać pozycje!
+            NoweZlecenieWindow kreator = new NoweZlecenieWindow(wprowadzilLogin);
 
-                    using (SqlCommand cmd = new SqlCommand(sql, cn))
-                    {
-                        cmd.Parameters.AddWithValue("@idZlec", idZlecenia);
-                        using (SqlDataReader dr = cmd.ExecuteReader())
-                        {
-                            DataTable dt = new DataTable();
-                            dt.Load(dr);
-                            GridPozycjeZlecenia.ItemsSource = dt.DefaultView;
-                        }
-                    }
-                }
+            // Wywołujemy ukrytą metodę załadowania pozycji (napisana w Kroku 3)
+            kreator.WczytajIstniejaceZlecenieZBase(idZlecenia);
 
-                // Podpięcie zdarzenia zmiany zaznaczenia pozycji koszyka, aby wyświetlić uwagi
-                if (GridPozycjeZlecenia.Items.Count > 0)
-                {
-                    GridPozycjeZlecenia.SelectionChanged -= GridPozycjeZlecenia_SelectionChanged;
-                    GridPozycjeZlecenia.SelectionChanged += GridPozycjeZlecenia_SelectionChanged;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Błąd pobierania składników zlecenia: " + ex.Message, "Błąd relacji");
-            }
+            kreator.Show();
+            this.Close(); // Zamykamy panel statusu
         }
 
-        private void GridPozycjeZlecenia_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            DataRowView? selectedLine = GridPozycjeZlecenia.SelectedItem as DataRowView;
-            if (selectedLine != null)
-            {
-                TxtUwagiPozycji.Text = selectedLine["Uwagi"].ToString();
-            }
-            else
-            {
-                TxtUwagiPozycji.Text = string.Empty;
-            }
-        }
-
-        private void BtnOdswiez_Click(object sender, RoutedEventArgs e)
-        {
-            LadujRejestrZlecenBazy();
-            MessageBox.Show("Zaktualizowano rejestr zleceń pobierając najświeższe dane wejściowe.", "Synchronizacja", MessageBoxButton.OK, MessageBoxImage.Asterisk);
-        }
-
-        private void BtnSzczegolyZlecenia_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Funkcja podglądu i edycji historycznych parametrów zlecenia w kreatorze.", "Informacja");
-        }
+        private void GridZlecenia_MouseDoubleClick(object sender, MouseButtonEventArgs e) => UruchomKonfiguratorDlaZaznaczonego();
+        private void BtnOtworz_Click(object sender, RoutedEventArgs e) => UruchomKonfiguratorDlaZaznaczonego();
+        private void BtnOdswiez_Click(object sender, RoutedEventArgs e) => LadujZleceniaZBase();
+        private void BtnAnuluj_Click(object sender, RoutedEventArgs e) => this.Close();
     }
 }

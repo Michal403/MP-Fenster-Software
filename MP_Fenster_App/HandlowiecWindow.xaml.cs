@@ -11,36 +11,27 @@ namespace MP_Fenster_App
         public HandlowiecWindow(string user)
         {
             InitializeComponent();
-
             _zalogowanyUser = user;
 
-            // Ustawiamy dane na pasku statusu (naprawa Kowalskiego)
+            // Inicjalizacja paska stanu systemu Fenster
             StatusUser.Content = _zalogowanyUser.ToUpper();
             StatusDate.Content = DateTime.Now.ToString("dd.MM.yyyy");
             StatusTime.Content = DateTime.Now.ToString("HH:mm");
 
-            // Wywołujemy funkcję, która w przyszłości pociągnie dane z Azure
             OdswiezZleceniaZBazy();
         }
 
         private void OdswiezZleceniaZBazy()
         {
-            // Czyścimy drzewo przed ładowaniem
             MyOrdersTree.Items.Clear();
-
-            // Tworzymy główny węzeł
             TreeViewItem root = new TreeViewItem { Header = "Zlecenia", IsExpanded = true };
 
-            // SYMULACJA DANYCH Z BAZY (tu wstawimy SQL Connection potem)
-            // Na razie dodajemy przykłady, żebyś widział, że działa dynamicznie
             root.Items.Add(new TreeViewItem { Header = "Zlecenie 45689 - Aktywne" });
             root.Items.Add(new TreeViewItem { Header = "Zlecenie 45700 - Wycena" });
             root.Items.Add(new TreeViewItem { Header = "Zlecenie 45812 - Nowe" });
 
             MyOrdersTree.Items.Add(root);
         }
-
-        // --- Obsługa menu i przycisków ---
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
@@ -49,19 +40,31 @@ namespace MP_Fenster_App
             this.Close();
         }
 
+        // KAFELEK 1: NOWE ZLECENIE (Kreator)
         private void BtnNowe_Click(object sender, RoutedEventArgs e)
         {
             NoweZlecenieWindow okno = new NoweZlecenieWindow(_zalogowanyUser);
-            okno.ShowDialog(); // Otwiera okno kreatora
+            okno.Show(); // Otwieramy normalnie w tle, żeby pulpit nie zamrażał
         }
 
+        // KAFELEK 2: PRZEGLĄD ZLECEŃ (Podpięcie pod dynamiczny panel SQL)
         private void BtnPrzeglad_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Przegląd wszystkich zleceń użytkownika " + _zalogowanyUser);
+            // Przekazujemy login i rolę "Handlowiec" - system automatycznie odfiltruje tylko jego zlecenia
+            StatusZlecen oknoRejestru = new StatusZlecen(_zalogowanyUser, "Handlowiec");
+            oknoRejestru.Show();
         }
 
-        private void BtnStatus_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Statusy zleceń");
+        // KAFELEK 3: STATUS ZLECEŃ (Przekierowanie do tego samego modułu statusowego bazy)
+        private void BtnStatus_Click(object sender, RoutedEventArgs e)
+        {
+            StatusZlecen oknoRejestru = new StatusZlecen(_zalogowanyUser, "Handlowiec");
+            oknoRejestru.Show();
+        }
 
-        private void BtnKlienci_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Baza klientów");
+        private void BtnKlienci_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Moduł bazy klientów (CRM za pomocą Entity Framework Core).", "Baza klientów");
+        }
     }
 }
