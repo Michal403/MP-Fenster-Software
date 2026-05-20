@@ -203,17 +203,17 @@
                 <TextBlock Grid.Row="0" Grid.Column="2" Text="Klient" VerticalAlignment="Center" Margin="15,0,5,0"/>
                 <StackPanel Grid.Row="0" Grid.Column="3" Orientation="Horizontal">
                     <TextBox x:Name="TxtIdKlienta" Width="40" IsReadOnly="True" Background="#EAEAEA" Margin="2" Padding="2"/>
-                    <ComboBox x:Name="CmbKlienci" Width="200" Margin="2" SelectionChanged="OpcjeFinansowe_SelectionChanged"/>
+                    <TextBox x:Name="TxtWybranyKlient" Width="160" IsReadOnly="True" Background="#EAEAEA" Margin="2" Padding="2"/>
                 </StackPanel>
 
                 <TextBlock Grid.Row="0" Grid.Column="4" Text="Preferow. termin" VerticalAlignment="Center" Margin="15,0,5,0"/>
-                <DatePicker x:Name="DpTermin" Grid.Row="0" Grid.Column="5" Margin="2" SelectedDateChanged="OpcjeFinansowe_SelectionChanged"/>
+                <DatePicker x:Name="DpPreferowanyTermin" Grid.Row="0" Grid.Column="5" Margin="2" SelectedDateChanged="DpPreferowanyTermin_SelectedDateChanged"/>
 
                 <TextBlock Grid.Row="0" Grid.Column="6" Text="Data wpr." VerticalAlignment="Center" Margin="15,0,5,0"/>
                 <TextBox x:Name="TxtDataWpr" Grid.Row="0" Grid.Column="7" Background="#EAEAEA" IsReadOnly="True" Margin="2" Padding="2"/>
 
                 <TextBlock Grid.Row="0" Grid.Column="8" Text="Transport" VerticalAlignment="Center" Margin="15,0,5,0"/>
-                <ComboBox x:Name="CmbTransport" Grid.Row="0" Grid.Column="9" SelectedIndex="0" Margin="2" SelectionChanged="OpcjeFinansowe_SelectionChanged">
+                <ComboBox x:Name="CmbTransport" Grid.Row="0" Grid.Column="9" SelectedIndex="1" Margin="2" SelectionChanged="OpcjeFinansowe_SelectionChanged">
                     <ComboBoxItem Content="TAK"/>
                     <ComboBoxItem Content="NIE"/>
                 </ComboBox>
@@ -229,16 +229,13 @@
                 </ComboBox>
 
                 <TextBlock Grid.Row="1" Grid.Column="4" Text="Typ zlecenia" VerticalAlignment="Center" Margin="15,0,5,0"/>
-                <ComboBox x:Name="CmbTypZlecenia" Grid.Row="1" Grid.Column="5" SelectedIndex="0" Margin="2">
-                    <ComboBoxItem Content="N - priorytet normalny"/>
-                    <ComboBoxItem Content="P - pilne produkcyjne"/>
-                </ComboBox>
+                <ComboBox x:Name="CmbTypZlecenia" DisplayMemberPath="NazwaTypu" SelectedValuePath="NazwaTypu" Grid.Row="1" Grid.Column="5" Margin="2"/>
 
                 <TextBlock Grid.Row="1" Grid.Column="6" Text="Ref." VerticalAlignment="Center" Margin="15,0,5,0"/>
                 <TextBox x:Name="TxtRef" Grid.Row="1" Grid.Column="7" Margin="2" Padding="2"/>
 
                 <TextBlock Grid.Row="1" Grid.Column="8" Text="Montaż" VerticalAlignment="Center" Margin="15,0,5,0"/>
-                <ComboBox x:Name="CmbMontaz" Grid.Row="1" Grid.Column="9" SelectedIndex="0" Margin="2" SelectionChanged="OpcjeFinansowe_SelectionChanged">
+                <ComboBox x:Name="CmbMontaz" Grid.Row="1" Grid.Column="9" SelectedIndex="1" Margin="2" SelectionChanged="OpcjeFinansowe_SelectionChanged">
                     <ComboBoxItem Content="TAK"/>
                     <ComboBoxItem Content="NIE"/>
                 </ComboBox>
@@ -565,7 +562,7 @@
                             <TextBlock x:Name="TxtSumaWszystkichNetto" Grid.Row="1" Grid.Column="1" Text="0,00 PLN" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
 
                             <TextBlock Grid.Row="2" Grid.Column="0" Text="Rabat (%)" FontSize="11" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TxtRabatProcent" Grid.Row="2" Grid.Column="1" Text="12" Width="50" TextAlignment="Right" Height="18" FontSize="11" VerticalAlignment="Center" TextChanged="OpcjeFinansowe_SelectionChanged"/>
+                            <TextBox x:Name="TxtRabatProcent" Grid.Row="2" Grid.Column="1" Text="12" Width="50" TextAlignment="Right" Height="18" FontSize="11" VerticalAlignment="Center" LostFocus="TxtRabatProcent_LostFocus"/>
 
                             <TextBlock Grid.Row="3" Grid.Column="0" Text="Rabat za okna" FontSize="11" VerticalAlignment="Center"/>
                             <TextBlock x:Name="TxtWartoscRabatu" Grid.Row="3" Grid.Column="1" Text="0,00 PLN" FontSize="11" VerticalAlignment="Center"/>

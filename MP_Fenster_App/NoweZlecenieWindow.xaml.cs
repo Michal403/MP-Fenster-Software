@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Data.SqlClient;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
@@ -6,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
-using Microsoft.Data.SqlClient;
 
 namespace MP_Fenster_App
 {
@@ -18,7 +18,7 @@ namespace MP_Fenster_App
         private bool _blokadaOdswiezania = false;
         private DispatcherTimer _timer = null!;
 
-        // POPRAWKA: Pole śledzące ID edytowanego dokumentu z bazy
+        // Pole śledzące ID edytowanego dokumentu z bazy
         private int? _obecneIdZlecenia = null;
 
         public PozycjaZlecenia? WybranaPozycja => GridPozycje?.SelectedItem as PozycjaZlecenia;
@@ -46,11 +46,14 @@ namespace MP_Fenster_App
             TxtDataWpr.Text = aktualnaData;
             StData.Text = aktualnaData;
 
-            DpTermin.DisplayDateStart = DateTime.Now.AddDays(7);
-            DpTermin.SelectedDate = DateTime.Now.AddDays(30);
+            // Blokada dat: jutro to minimum (data wejścia systemu: maj 2026 r.)
+            DpPreferowanyTermin.DisplayDateStart = DateTime.Today.AddDays(1);
+            DpPreferowanyTermin.SelectedDate = DateTime.Today.AddDays(14); // Propozycja terminu: za 2 tygodnie
+
+            // Wywołanie ładowania dynamicznych priorytetów z tabeli TypyZlecen w Dockerze
+            ZaładujTypyZlecenZBase();
 
             PobierzKolejnyNumerZlecenia();
-            LadujKlientowZBase();
             LadujSlownikiZBase();
             PrzeliczFinanseZlecenia();
         }
@@ -87,34 +90,6 @@ namespace MP_Fenster_App
             catch
             {
                 TxtZlecenie.Text = "100";
-            }
-        }
-
-        private void LadujKlientowZBase()
-        {
-            try
-            {
-                using (SqlConnection cn = new SqlConnection(_connString))
-                {
-                    cn.Open();
-                    string sql = "SELECT IdKlienta, (NazwaKlienta + ' - ' + ISNULL(NIP,'Indywidualny')) AS KlientOpis FROM Klienci";
-                    using (SqlCommand cmd = new SqlCommand(sql, cn))
-                    {
-                        using (SqlDataReader dr = cmd.ExecuteReader())
-                        {
-                            DataTable dt = new DataTable();
-                            dt.Load(dr);
-                            CmbKlienci.ItemsSource = dt.DefaultView;
-                            CmbKlienci.DisplayMemberPath = "KlientOpis";
-                            CmbKlienci.SelectedValuePath = "IdKlienta";
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                CmbKlienci.Items.Add("Nowak Mateusz - FIRMA BUDOWLANA");
-                CmbKlienci.SelectedIndex = 0;
             }
         }
 
@@ -194,6 +169,8 @@ namespace MP_Fenster_App
             CmbKolorKlamki.Text = pos.KolorKlamki;
             CmbListwa.Text = pos.ListwaPodparapetowa;
 
+            TxtIdKlienta.Text = pos.Poz;
+
             ActualizeLabelsDescriptor();
             PrzeliczFinanseZlecenia();
 
@@ -204,7 +181,7 @@ namespace MP_Fenster_App
                                    $" • Gabaryty ościeżnicy: {pos.Szerokosc} x {pos.Wysokosc} mm\n" +
                                    $" • Pakiet szklenia: {pos.Wypelnienie} mm (Ramka: {pos.TypRamki})\n" +
                                    $" • Kolorystyka: Okleina {pos.KolorOkleiny} | Rdzeń/Baza: {pos.KolorBazy}\n" +
-                                   $" • Uszczelnienie: Kolor {pos.KolorUszczelki}\n" +
+                                   $" • Uszczelnienie: Color {pos.KolorUszczelki}\n" +
                                    $" • Mechanizm okuć: {pos.WariantOkuc} (Klasa odporności: {pos.KlasaBezpieczenstwa})\n" +
                                    $" • Klamka: {pos.TypKlamki} ({pos.KolorKlamki})\n" +
                                    $" • Listwa transportowa: {pos.ListwaPodparapetowa}\n" +
@@ -219,7 +196,6 @@ namespace MP_Fenster_App
         {
             var pos = WybranaPozycja;
             if (_blokadaOdswiezania || pos == null) return;
-
             pos.SystemOkna = CmbSystemOkna.Text;
             pos.Rodzaj = CmbRodzajKonstrukcji.Text;
             pos.NrProd = CmbProdukt.Text;
@@ -258,7 +234,7 @@ namespace MP_Fenster_App
             TxtOznaczRamka.Text = pos.TypRamki;
             TxtOznaczWariantKolor.Text = pos.WariantUkladuKoloru;
             TxtOznaczKolorOkleiny.Text = pos.KolorOkleiny;
-            TxtOznaczUszczelka.Text = pos.FormatUszczelka(); // Secure extraction format fallback
+            TxtOznaczUszczelka.Text = pos.FormatUszczelka();
             TxtOznaczBaza.Text = pos.KolorBazy;
             TxtOznaczKlasa.Text = pos.KlasaBezpieczenstwa;
             TxtOznaczWariant.Text = pos.WariantOkuc;
@@ -275,14 +251,49 @@ namespace MP_Fenster_App
                 TxtCalkowityKosztBrutto == null || TxtRabatProcent == null || TxtWartoscRabatu == null ||
                 TxtCenaPoRabacie == null || TxtCenaAktywnejPoz == null) return;
 
+            string obszarText = (CmbObszar.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Polska";
+
+            string waluta = "PLN";
+            double przelicznikWaluty = 1.0;
+            double stawkaVat = 0.23;
+
+            try
+            {
+                using (SqlConnection cn = new SqlConnection(_connString))
+                {
+                    cn.Open();
+                    string sqlQuery = "SELECT Waluta, Kurs, StawkaVat FROM ParametryFinansowe WHERE Kraj = @Kraj";
+                    using (SqlCommand cmd = new SqlCommand(sqlQuery, cn))
+                    {
+                        cmd.Parameters.AddWithValue("@Kraj", obszarText);
+                        using (SqlDataReader dr = cmd.ExecuteReader())
+                        {
+                            if (dr.Read())
+                            {
+                                waluta = dr["Waluta"].ToString() ?? "PLN";
+                                przelicznikWaluty = Convert.ToDouble(dr["Kurs"]);
+                                stawkaVat = Convert.ToDouble(dr["StawkaVat"]);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("SQL Error (Finanse krajowe): " + ex.Message);
+            }
+
             double sumaWszystkichNetto = 0;
             double cenaAktywnejPozycjiNetto = 0;
+            int lacznaIloscOkienwZleceniu = 0;
 
             foreach (var pos in ListaPozycji)
             {
                 if (pos.Szerokosc == 0 || pos.Wysokosc == 0) continue;
-                double m2 = (pos.Szerokosc / 1000.0) * (pos.Wysokosc / 1000.0);
 
+                lacznaIloscOkienwZleceniu += pos.Szt;
+
+                double m2 = (pos.Szerokosc / 1000.0) * (pos.Wysokosc / 1000.0);
                 double cenaM2Baza = 410;
                 if (pos.SystemOkna.Contains("Schuco Living MD")) cenaM2Baza = 580;
                 else if (pos.SystemOkna.Contains("Salamander BluEvolution 82")) cenaM2Baza = 620;
@@ -291,33 +302,69 @@ namespace MP_Fenster_App
                 if (pos.Wypelnienie == "3-48") cenaM2Baza += 130;
                 else if (pos.Wypelnienie == "4-48") cenaM2Baza += 270;
 
-                double wycenaPozycji = (m2 * cenaM2Baza * pos.Szt);
+                double wycenaPozycji = (m2 * cenaM2Baza * pos.Szt) * przelicznikWaluty;
                 sumaWszystkichNetto += wycenaPozycji;
 
                 if (pos == WybranaPozycja) cenaAktywnejPozycjiNetto = wycenaPozycji;
             }
 
+            double stawkaZaJednoOknoTransport = 30;
+            double stawkaZaJednoOknoMontaz = 150;
+
+            try
+            {
+                using (SqlConnection cn = new SqlConnection(_connString))
+                {
+                    cn.Open();
+                    string sqlUslugi = "SELECT NazwaUslugi, CenaJednostkowaPLN FROM CennikUslug";
+                    using (SqlCommand cmd = new SqlCommand(sqlUslugi, cn))
+                    {
+                        using (SqlDataReader dr = cmd.ExecuteReader())
+                        {
+                            while (dr.Read())
+                            {
+                                string nazwa = dr["NazwaUslugi"].ToString();
+                                if (nazwa == "TransportJednegoOkna") stawkaZaJednoOknoTransport = Convert.ToDouble(dr["CenaJednostkowaPLN"]);
+                                if (nazwa == "MontazJednegoOkna") stawkaZaJednoOknoMontaz = Convert.ToDouble(dr["CenaJednostkowaPLN"]);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("SQL Error (CennikUslug): " + ex.Message);
+            }
+
             string transportText = (CmbTransport.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "NIE";
-            string obszarText = (CmbObszar.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Polska";
             string montazText = (CmbMontaz.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "NIE";
 
             if (!double.TryParse(TxtRabatProcent.Text, out double rabatProc)) rabatProc = 0;
             double wartoscRabatu = sumaWszystkichNetto * (rabatProc / 100.0);
             double cenaPoRabacie = sumaWszystkichNetto - wartoscRabatu;
 
-            double kosztTransportu = (transportText == "TAK") ? 200 : 0;
-            if (obszarText == "Niemcy") kosztTransportu = 1500;
+            double kosztTransportu = 0;
+            if (transportText == "TAK")
+            {
+                kosztTransportu = (stawkaZaJednoOknoTransport * lacznaIloscOkienwZleceniu) * przelicznikWaluty;
+                if (obszarText == "Niemcy") kosztTransportu += (1000 * przelicznikWaluty);
+            }
 
-            double kosztMontazu = (montazText == "TAK") ? 3800 : 0;
-            double calkowityKosztBrutto = (cenaPoRabacie + kosztTransportu + kosztMontazu) * 1.23;
+            double kosztMontazu = 0;
+            if (montazText == "TAK")
+            {
+                kosztMontazu = (stawkaZaJednoOknoMontaz * lacznaIloscOkienwZleceniu) * przelicznikWaluty;
+            }
 
-            TxtCenaAktywnejPoz.Text = $"{cenaAktywnejPozycjiNetto:N2} PLN";
-            TxtSumaWszystkichNetto.Text = $"{sumaWszystkichNetto:N2} PLN";
-            TxtWartoscRabatu.Text = $"{wartoscRabatu:N2} PLN";
-            TxtCenaPoRabacie.Text = $"{cenaPoRabacie:N2} PLN";
-            TxtCenaMontazu.Text = $"{kosztMontazu:N2} PLN";
-            TxtCenaTransportu.Text = $"{kosztTransportu:N2} PLN";
-            TxtCalkowityKosztBrutto.Text = $"{calkowityKosztBrutto:N2} PLN";
+            double calkowityKosztBrutto = (cenaPoRabacie + kosztTransportu + kosztMontazu) * (1.0 + stawkaVat);
+
+            TxtCenaAktywnejPoz.Text = $"{cenaAktywnejPozycjiNetto:N2} {waluta}";
+            TxtSumaWszystkichNetto.Text = $"{sumaWszystkichNetto:N2} {waluta}";
+            TxtWartoscRabatu.Text = $"{wartoscRabatu:N2} {waluta}";
+            TxtCenaPoRabacie.Text = $"{cenaPoRabacie:N2} {waluta}";
+            TxtCenaMontazu.Text = $"{kosztMontazu:N2} {waluta}";
+            TxtCenaTransportu.Text = $"{kosztTransportu:N2} {waluta}";
+            TxtCalkowityKosztBrutto.Text = $"{calkowityKosztBrutto:N2} {waluta}";
         }
 
         private void RysujGabarytyOkna()
@@ -367,12 +414,26 @@ namespace MP_Fenster_App
                 pos.StatusZablokowany = false;
             }
         }
-
-        private void OpcjeFinansowe_SelectionChanged(object sender, RoutedEventArgs e) => PrzeliczFinanseZlecenia();
-
-        private void CmbKlienci_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void DpPreferowanyTermin_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (CmbKlienci.SelectedValue != null) TxtIdKlienta.Text = CmbKlienci.SelectedValue.ToString();
+            if (ListaPozycji == null) return;
+            PrzeliczFinanseZlecenia();
+        }
+        private void TxtRabatProcent_LostFocus(object sender, RoutedEventArgs e)
+        {
+            // Zabezpieczenie na wypadek ładowania okna
+            if (ListaPozycji == null) return;
+
+            // Przeliczamy ceny po zmianie rabatu
+            PrzeliczFinanseZlecenia();
+        }
+        private void OpcjeFinansowe_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Zabezpieczenie: Jeśli okno się dopiero ładuje i koszyk nie istnieje, nic nie rób
+            if (ListaPozycji == null) return;
+
+            // Wymuszamy ponowne przeliczenie finansów i uaktualnienie etykiet walutowych
+            PrzeliczFinanseZlecenia();
         }
 
         private void BtnToggleToolBar_Click(object sender, RoutedEventArgs e)
@@ -546,8 +607,11 @@ namespace MP_Fenster_App
                 }
             }
         }
-
-        // POPRAWKA: Prawdziwy i poprawny zapis transakcyjny RAW SQL obsługujący tryb UPDATE i INSERT
+        private void BtnZamknijZapisz_Click(object sender, RoutedEventArgs e)
+        {
+            ZapiszZlecenieDoBazySystemu();
+            this.Close();
+        }
         private void ZapiszZlecenieDoBazySystemu()
         {
             if (ListaPozycji.Count == 0)
@@ -577,14 +641,11 @@ namespace MP_Fenster_App
                             string transportText = (CmbTransport.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "NIE";
                             string montazText = (CmbMontaz.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "NIE";
                             string obszarText = (CmbObszar.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Polska";
-                            string typText = (CmbTypZlecenia.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "N";
-                            string typChar = typText.Contains(" - ") ? typText.Split(' ')[0] : (typText.Length > 0 ? typText.Substring(0, 1) : "N");
 
                             int idZleceniaDoPozycji = 0;
 
                             if (_obecneIdZlecenia.HasValue)
                             {
-                                // TRYB EDYCJI: Aktualizacja istniejącego rekordu nagłówka oferty
                                 idZleceniaDoPozycji = _obecneIdZlecenia.Value;
                                 string sqlUpdateHeader = @"UPDATE Zlecenia SET 
                                     IdKlienta = @klient, 
@@ -593,7 +654,8 @@ namespace MP_Fenster_App
                                     Obszar = @obszar, 
                                     CzyTransport = @trans, 
                                     CzyMontaz = @montaz, 
-                                    TypZlecenia = @typ 
+                                    TypZlecenia = @typ,
+                                    Referencja = @ref
                                     WHERE IdZlecenia = @idZlec";
 
                                 using (SqlCommand cmdUpdate = new SqlCommand(sqlUpdateHeader, cn, tx))
@@ -601,16 +663,16 @@ namespace MP_Fenster_App
                                     cmdUpdate.Parameters.AddWithValue("@idZlec", idZleceniaDoPozycji);
                                     cmdUpdate.Parameters.AddWithValue("@klient", string.IsNullOrEmpty(TxtIdKlienta.Text) ? 1 : Convert.ToInt32(TxtIdKlienta.Text));
                                     cmdUpdate.Parameters.AddWithValue("@user", idUzytkownika);
-                                    cmdUpdate.Parameters.AddWithValue("@termin", DpTermin.SelectedDate ?? DateTime.Now.AddDays(14));
+                                    cmdUpdate.Parameters.AddWithValue("@termin", DpPreferowanyTermin.SelectedDate ?? DateTime.Today.AddDays(14));
                                     cmdUpdate.Parameters.AddWithValue("@obszar", obszarText);
                                     cmdUpdate.Parameters.AddWithValue("@trans", transportText == "TAK");
                                     cmdUpdate.Parameters.AddWithValue("@montaz", montazText == "TAK");
-                                    cmdUpdate.Parameters.AddWithValue("@typ", typChar);
+                                    cmdUpdate.Parameters.AddWithValue("@typ", CmbTypZlecenia.SelectedValue ?? "Standard");
+                                    cmdUpdate.Parameters.AddWithValue("@ref", TxtRef.Text.Trim());
 
                                     cmdUpdate.ExecuteNonQuery();
                                 }
 
-                                // Czyszczenie starych wierszy powiązanych z tym IdZlecenia przed wgraniem nowego stanu koszyka okien
                                 string sqlDeleteLines = "DELETE FROM PozycjeZlecenia WHERE IdZlecenia = @idZlec";
                                 using (SqlCommand cmdDel = new SqlCommand(sqlDeleteLines, cn, tx))
                                 {
@@ -620,28 +682,28 @@ namespace MP_Fenster_App
                             }
                             else
                             {
-                                // TRYB NOWY: Wstawienie nowego dokumentu i pobranie wygenerowanego klucza głównego
                                 string sqlHeader = @"INSERT INTO Zlecenia 
-                                    (NumerZlecenia, IdKlienta, IdUzytkownika, DataWprowadzenia, TerminPreferowany, Obszar, CzyTransport, CzyMontaz, TypZlecenia, StatusZlecenia) 
-                                    VALUES (@nr, @klient, @user, GETDATE(), @termin, @obszar, @trans, @montaz, @typ, 'OFERTA');
-                                    SELECT SCOPE_IDENTITY();";
+                                    (NumerZlecenia, IdKlienta, IdUzytkownika, DataWprowadzenia, TerminPreferowany, Obszar, CzyTransport, CzyMontaz, TypZlecenia, StatusZlecenia, Referencja) 
+                                    VALUES (@nr, @klient, @user, GETDATE(), @termin, @obszar, @trans, @montaz, @typ, 'OFERTA', @ref);
+                                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
                                 using (SqlCommand cmdHeader = new SqlCommand(sqlHeader, cn, tx))
                                 {
                                     cmdHeader.Parameters.AddWithValue("@nr", TxtZlecenie.Text);
                                     cmdHeader.Parameters.AddWithValue("@klient", string.IsNullOrEmpty(TxtIdKlienta.Text) ? 1 : Convert.ToInt32(TxtIdKlienta.Text));
                                     cmdHeader.Parameters.AddWithValue("@user", idUzytkownika);
-                                    cmdHeader.Parameters.AddWithValue("@termin", DpTermin.SelectedDate ?? DateTime.Now.AddDays(14));
+                                    cmdHeader.Parameters.AddWithValue("@termin", DpPreferowanyTermin.SelectedDate ?? DateTime.Today.AddDays(14));
                                     cmdHeader.Parameters.AddWithValue("@obszar", obszarText);
                                     cmdHeader.Parameters.AddWithValue("@trans", transportText == "TAK");
                                     cmdHeader.Parameters.AddWithValue("@montaz", montazText == "TAK");
-                                    cmdHeader.Parameters.AddWithValue("@typ", typChar);
+                                    cmdHeader.Parameters.AddWithValue("@typ", CmbTypZlecenia.SelectedValue ?? "Standard");
+                                    cmdHeader.Parameters.AddWithValue("@ref", TxtRef.Text.Trim());
 
-                                    idZleceniaDoPozycji = Convert.ToInt32(cmdHeader.ExecuteScalar());
+                                    idZleceniaDoPozycji = (int)cmdHeader.ExecuteScalar();
+                                    _obecneIdZlecenia = idZleceniaDoPozycji;
                                 }
                             }
 
-                            // Zrzut wszystkich linii konfiguratora do powiązanej tabeli relacyjnej
                             string sqlLine = @"INSERT INTO PozycjeZlecenia 
                                 (IdZlecenia, NrProdukcyjny, Sztuk, Szerokosc, Wysokosc, CenaJednostkowa, Uwagi, StatusTechniczny) 
                                 VALUES (@idZlec, @nrProd, @szt, @szer, @wys, @cena, @uwagi, @statusTech)";
@@ -669,7 +731,7 @@ namespace MP_Fenster_App
                             }
 
                             tx.Commit();
-                            MessageBox.Show($"Zlecenie numer {TxtZlecenie.Text} wraz ze wszystkimi ({ListaPozycji.Count}) pozycjami zostało pomyślnie zapisane na Dockerze! Dane są w 100% gotowe do odczytu na innym ekranie.", "Komunikat bazy SeaSharkDB", MessageBoxButton.OK, MessageBoxImage.Information);
+                            MessageBox.Show($"Zlecenie numer {TxtZlecenie.Text} wraz z pozycjami zostało pomyślnie zapisane!", "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
                         }
                         catch (Exception ex)
                         {
@@ -681,16 +743,38 @@ namespace MP_Fenster_App
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Błąd zapisu koszyka do chmury Docker: " + ex.Message, "Kalkulator Offline Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Błąd zapisu koszyka: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private void BtnZamknijZapisz_Click(object sender, RoutedEventArgs e) { ZapiszZlecenieDoBazySystemu(); this.Close(); }
         private void BtnZapiszPostepy_Click(object sender, RoutedEventArgs e) => ZapiszZlecenieDoBazySystemu();
         private void BtnWyjdzBezZapisu_Click(object sender, RoutedEventArgs e) { var res = MessageBox.Show("Wyjść bez zapisu?", "Potwierdzenie", MessageBoxButton.YesNo); if (res == MessageBoxResult.Yes) this.Close(); }
         private void BtnDrukuj_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Generowanie PDF...");
-        private void BtnDodajKlienta_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Dodawanie klienta.");
-        private void BtnListaKlientow_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Lista klientów.");
+
+        private void BtnDodajKlienta_Click(object sender, RoutedEventArgs e)
+        {
+            ZarzadzanieKlientamiWindow oknoSlownika = new ZarzadzanieKlientamiWindow(_zalogowanyUzytkownik, otworzOdRazuDodawanie: true);
+            oknoSlownika.Owner = this;
+
+            if (oknoSlownika.ShowDialog() == true)
+            {
+                TxtIdKlienta.Text = oknoSlownika.WybraneId.ToString();
+                TxtWybranyKlient.Text = oknoSlownika.WybranaNazwa;
+            }
+        }
+
+        private void BtnListaKlientow_Click(object sender, RoutedEventArgs e)
+        {
+            ZarzadzanieKlientamiWindow oknoSlownika = new ZarzadzanieKlientamiWindow(_zalogowanyUzytkownik, otworzOdRazuDodawanie: false);
+            oknoSlownika.Owner = this;
+
+            if (oknoSlownika.ShowDialog() == true)
+            {
+                TxtIdKlienta.Text = oknoSlownika.WybraneId.ToString();
+                TxtWybranyKlient.Text = oknoSlownika.WybranaNazwa;
+            }
+        }
+
         private void BtnAktualizujCeny_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Ceny zaktualizowane.");
         private void BtnKopiujZInnego_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Kopiowanie pozycji.");
         private void BtnWstawSpecjalne_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Wstawienie.");
@@ -699,7 +783,6 @@ namespace MP_Fenster_App
         private void BtnSpecMat_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Specyfikacja.");
         private void BtnKorektaCeny_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Korekta.");
 
-        // POPRAWKA: Rejestrowanie IdZlecenia podczas otwierania z panelu przeglądu
         public void WczytajIstniejaceZlecenieZBase(int idZlecenia)
         {
             _obecneIdZlecenia = idZlecenia;
@@ -709,8 +792,11 @@ namespace MP_Fenster_App
                 {
                     cn.Open();
 
-                    // 1. Ściągamy dane nagłówka, aby uzupełnić kontrolki
-                    string sqlHeader = "SELECT NumerZlecenia, IdKlienta, Obszar, CzyTransport, CzyMontaz FROM Zlecenia WHERE IdZlecenia = @id";
+                    string sqlHeader = @"SELECT NumerZlecenia, IdKlienta, Obszar, CzyTransport, CzyMontaz, 
+                                                TypZlecenia, TerminPreferowany, DataWprowadzenia, Referencja 
+                                         FROM Zlecenia 
+                                         WHERE IdZlecenia = @id";
+
                     using (SqlCommand cmdH = new SqlCommand(sqlHeader, cn))
                     {
                         cmdH.Parameters.AddWithValue("@id", idZlecenia);
@@ -720,15 +806,41 @@ namespace MP_Fenster_App
                             {
                                 TxtZlecenie.Text = drH["NumerZlecenia"].ToString();
                                 TxtIdKlienta.Text = drH["IdKlienta"].ToString();
-                                CmbKlienci.SelectedValue = drH["IdKlienta"];
                                 CmbObszar.Text = drH["Obszar"].ToString();
-                                CmbTransport.Text = Convert.ToBoolean(drH["CzyTransport"]) ? "TAK" : "NIE";
-                                CmbMontaz.Text = Convert.ToBoolean(drH["CzyMontaz"]) ? "TAK" : "NIE";
+
+                                if (drH["DataWprowadzenia"] != DBNull.Value)
+                                {
+                                    TxtDataWpr.Text = Convert.ToDateTime(drH["DataWprowadzenia"]).ToString("dd.MM.yyyy");
+                                }
+
+                                bool czyTransport = Convert.ToBoolean(drH["CzyTransport"]);
+                                CmbTransport.SelectedItem = czyTransport ? CmbTransport.Items[0] : CmbTransport.Items[1];
+
+                                bool czyMontaz = Convert.ToBoolean(drH["CzyMontaz"]);
+                                CmbMontaz.SelectedItem = czyMontaz ? CmbMontaz.Items[0] : CmbMontaz.Items[1];
+
+                                if (drH["Referencja"] != DBNull.Value)
+                                {
+                                    TxtRef.Text = drH["Referencja"].ToString();
+                                }
+                                else
+                                {
+                                    TxtRef.Text = string.Empty;
+                                }
+
+                                if (drH["TypZlecenia"] != DBNull.Value)
+                                {
+                                    CmbTypZlecenia.SelectedValue = drH["TypZlecenia"].ToString();
+                                }
+
+                                if (drH["TerminPreferowany"] != DBNull.Value)
+                                {
+                                    DpPreferowanyTermin.SelectedDate = Convert.ToDateTime(drH["TerminPreferowany"]);
+                                }
                             }
                         }
                     }
 
-                    // 2. Ściągamy wszystkie linie z tabeli PozycjeZlecenia za pomocą surowego zapytania
                     string sqlLines = "SELECT * FROM PozycjeZlecenia WHERE IdZlecenia = @id ORDER BY IdPozycji ASC";
                     using (SqlCommand cmdL = new SqlCommand(sqlLines, cn))
                     {
@@ -777,8 +889,43 @@ namespace MP_Fenster_App
                 MessageBox.Show("Błąd krytyczny odtwarzania koszyka zlecenia: " + ex.Message, "Błąd Re-Open");
             }
         }
-    }
 
+        private void ZaładujTypyZlecenZBase()
+        {
+            try
+            {
+                using (SqlConnection cn = new SqlConnection(_connString))
+                {
+                    cn.Open();
+                    string sql = "SELECT NazwaTypu FROM TypyZlecen ORDER BY Id ASC";
+
+                    using (SqlCommand cmd = new SqlCommand(sql, cn))
+                    {
+                        using (SqlDataReader dr = cmd.ExecuteReader())
+                        {
+                            var listaTypow = new System.Collections.Generic.List<object>();
+                            while (dr.Read())
+                            {
+                                listaTypow.Add(new { NazwaTypu = dr["NazwaTypu"].ToString() });
+                            }
+
+                            CmbTypZlecenia.ItemsSource = listaTypow;
+                        }
+                    }
+                }
+                if (CmbTypZlecenia.Items.Count > 0) CmbTypZlecenia.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Błąd struktur słownika TypyZlecen: " + ex.Message);
+            }
+        }
+
+    } // Zamyka klasę główną NoweZlecenieWindow
+
+    // =========================================================================
+    // KLASA MODELOWA (Musi być POZA klasą okna, ale WEWNĄTRZ namespace)
+    // =========================================================================
     public class PozycjaZlecenia : INotifyPropertyChanged
     {
         private string _poz = string.Empty; private string _nrProd = string.Empty; private int _szt; private string _rodzaj = string.Empty; private string _oznaczenie = string.Empty;
@@ -810,8 +957,8 @@ namespace MP_Fenster_App
         public string KolorKlamki { get => _kolorKlamki; set => SetProperty(ref _kolorKlamki, value); }
         public string ListwaPodparapetowa { get => _listwaPodparapetowa; set => SetProperty(ref _listwaPodparapetowa, value); }
 
-        // Metoda pomocnicza zapobiegająca nullowi przy wyciąganiu tekstu opisowego uszczelek
-        public string FormatUszczelka() => string.IsNullOrEmpty(KolorUszczelki) ? "SZARY" : KolorUszczelki;
+        public string FormatUszczelka() => string.IsNullOrEmpty(KeepFormatUszczelka) ? "SZARY" : KeepFormatUszczelka;
+        private string KeepFormatUszczelka => KolorUszczelki;
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? p = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(p));

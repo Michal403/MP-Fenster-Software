@@ -89,7 +89,7 @@ namespace MP_Fenster_App
                             else if (rola == "Admin")
                             {
                                 MessageBox.Show("Witaj Adminie! Masz pełne uprawnienia.", "Panel Administratora");
-                                new HandlowiecWindow(loginInput).Show();
+                                new AdminPanelWindow().Show();
                             }
 
                             this.Close();

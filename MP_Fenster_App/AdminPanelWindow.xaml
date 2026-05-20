@@ -1,0 +1,112 @@
+﻿<Window x:Class="MP_Fenster_App.AdminPanelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="SeaShark - Zaawansowany Panel Zarządzania Bazą Narzędziową" Height="700" Width="1350"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="0" Background="#F5F5F5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Background="#2C3E50" Grid.Row="0" Padding="10">
+                <TextBlock Text="Eksplorator bazy SeaShark" Foreground="White" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
+            </Border>
+
+            <TreeView x:Name="TvTables" Grid.Row="1" Margin="5" FontSize="13" 
+                      SelectedItemChanged="TvTables_SelectedItemChanged">
+            </TreeView>
+        </Grid>
+
+        <GridSplitter Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Stretch" Width="5" Background="#BDC3C7"/>
+
+        <Grid Grid.Column="2" Margin="15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="#ECF0F1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Aktywna tabela: " FontSize="14" FontWeight="SemiBold" Foreground="#7F8C8D"/>
+                    <TextBlock x:Name="LblCurrentTable" Text="wybierz tabelę z drzewka..." FontSize="14" FontWeight="Bold" Foreground="#2980B9"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="1" Margin="0,0,0,10" Background="#ECEFF1" Padding="4">
+                <WrapPanel>
+
+                    <Border Background="#E3F2FD" BorderBrush="#BBDEFB" BorderThickness="1" CornerRadius="4" Padding="6,4" Margin="2">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📝 REKORDY:" VerticalAlignment="Center" FontWeight="Bold" Foreground="#1E88E5" Margin="2,0,8,0" FontSize="11"/>
+                            <Button x:Name="BtnRefresh" Content="🔄 Odśwież" Click="BtnRefresh_Click" Margin="2" Padding="6,4" Background="#3498DB" Foreground="White" FontWeight="SemiBold" BorderThickness="0"/>
+                            <Button x:Name="BtnAddRow" Content="➕ Dodaj wiersz" Click="BtnAddRow_Click" Margin="2" Padding="6,4" Background="#2ECC71" Foreground="White" FontWeight="SemiBold" BorderThickness="0"/>
+                            <Button x:Name="BtnDuplicate" Content="📋 Kopiuj" Click="BtnDuplicate_Click" Margin="2" Padding="6,4" Background="#E67E22" Foreground="White" FontWeight="SemiBold" BorderThickness="0"/>
+                            <Button x:Name="BtnDeleteExplicit" Content="❌ Usuń" Click="BtnDeleteExplicit_Click" Margin="2" Padding="6,4" Background="#E74C3C" Foreground="White" FontWeight="SemiBold" BorderThickness="0"/>
+                            <Button x:Name="BtnCancelChanges" Content="↩️ Odrzuć edycję" Click="BtnCancelChanges_Click" Margin="2" Padding="6,4" Background="#95A5A6" Foreground="White" FontWeight="SemiBold" BorderThickness="0"/>
+                            <Button x:Name="BtnClearTable" Content="🧹 Wyczyść" Click="BtnClearTable_Click" Margin="2" Padding="6,4" Background="#7F8C8D" Foreground="White" FontWeight="SemiBold" BorderThickness="0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#F3E5F5" BorderBrush="#E1BEE7" BorderThickness="1" CornerRadius="4" Padding="6,4" Margin="2">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🛠️ STRUKTURA KOLUMN:" VerticalAlignment="Center" FontWeight="Bold" Foreground="#8E24AA" Margin="2,0,8,0" FontSize="11"/>
+                            <TextBox x:Name="TxtNewColumn" Width="100" Height="24" VerticalContentAlignment="Center" Margin="0,0,4,0" Padding="4,0,0,0"/>
+                            <Button x:Name="BtnAddColumn" Content="➕ Dodaj kolumnę" Click="BtnAddColumn_Click" Margin="2" Padding="6,4" Background="#9B59B6" Foreground="White" FontWeight="SemiBold" BorderThickness="0"/>
+                            <Button x:Name="BtnDeleteColumn" Content="🗑️ Usuń zaznaczoną kolumnę" Click="BtnDeleteColumn_Click" Margin="2" Padding="6,4" Background="#D35400" Foreground="White" FontWeight="SemiBold" BorderThickness="0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#E8F5E9" BorderBrush="#C8E6C9" BorderThickness="1" CornerRadius="4" Padding="6,4" Margin="2">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📁 TABELE SYSTEMOWE:" VerticalAlignment="Center" FontWeight="Bold" Foreground="#388E3C" Margin="2,0,8,0" FontSize="11"/>
+                            <TextBox x:Name="TxtNewTable" Width="100" Height="24" VerticalContentAlignment="Center" Margin="0,0,4,0" Padding="4,0,0,0"/>
+                            <Button x:Name="BtnCreateTable" Content="🚀 Utwórz" Click="BtnCreateTable_Click" Margin="2" Padding="6,4" Background="#16A085" Foreground="White" FontWeight="SemiBold" BorderThickness="0"/>
+                            <Button x:Name="BtnDeleteTable" Content="💥 DROP Usuń" Click="BtnDeleteTable_Click" Margin="2" Padding="6,4" Background="#C0392B" Foreground="White" FontWeight="SemiBold" BorderThickness="0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Button x:Name="BtnInfo" Content="ℹ️ Instrukcja" Click="BtnInfo_Click" Margin="4,2" Padding="10,4" Background="#7F8C8D" Foreground="White" FontWeight="Bold" BorderThickness="0" VerticalAlignment="Center"/>
+                </WrapPanel>
+            </Border>
+
+            <DataGrid x:Name="DgAdminData" Grid.Row="2" 
+                      AutoGenerateColumns="True" 
+                      AlternatingRowBackground="#F9F9F9"
+                      GridLinesVisibility="All"
+                      BorderBrush="#BDC3C7"
+                      CanUserAddRows="True" 
+                      CanUserDeleteRows="True" 
+                      FontSize="13" RowHeight="28">
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="➕ Dodaj nowy wiersz" Click="BtnAddRow_Click"/>
+                        <MenuItem Header="📋 Klonuj/Kopiuj ten wiersz" Click="BtnDuplicate_Click"/>
+                        <MenuItem Header="❌ Usuń ten wiersz" Click="BtnDeleteExplicit_Click"/>
+                        <Separator/>
+                        <MenuItem Header="🔄 Odśwież widok danych" Click="BtnRefresh_Click"/>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+            </DataGrid>
+
+            <Grid Grid.Row="3" Margin="0,15,0,0">
+                <Button x:Name="BtnSave" Content="Zapisz wszystkie zmiany w Dockerze" 
+                        HorizontalAlignment="Right" Height="42" Width="320"
+                        Background="#27AE60" Foreground="White" FontWeight="Bold" FontSize="14"
+                        Click="BtnSave_Click"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
