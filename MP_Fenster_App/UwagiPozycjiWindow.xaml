@@ -1,0 +1,19 @@
+﻿<Window x:Class="MP_Fenster_App.UwagiPozycjiWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Icon="/Ikony/logo.png"
+        Title="Uwagi do pozycji" Height="260" Width="520"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="TxtNaglowek" FontWeight="Bold" Margin="0,0,0,8"/>
+        <TextBox x:Name="TxtUwagi" Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="Zapisz" Width="90" Margin="0,0,6,0" Click="BtnZapisz_Click"/>
+            <Button Content="Anuluj" Width="90" Click="BtnAnuluj_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

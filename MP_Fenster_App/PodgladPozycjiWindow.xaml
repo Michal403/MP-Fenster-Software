@@ -1,0 +1,35 @@
+﻿<Window x:Class="MP_Fenster_App.PodgladPozycjiWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Icon="/Ikony/logo.png"
+        Title="Podgląd pozycji" Height="620" Width="900"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="280"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Border BorderBrush="#999999" BorderThickness="1" Background="White">
+            <Canvas x:Name="CanvasPodglad" Margin="20"/>
+        </Border>
+        <Grid Grid.Row="1" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="TxtOpis" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto" Padding="8"/>
+            <DataGrid x:Name="DgPozycje" Grid.Column="1" Margin="10,0,0,0" AutoGenerateColumns="False"
+                      IsReadOnly="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Poz." Binding="{Binding Poz}" Width="55"/>
+                    <DataGridTextColumn Header="Produkt" Binding="{Binding NrProd}" Width="80"/>
+                    <DataGridTextColumn Header="Szt." Binding="{Binding Szt}" Width="55"/>
+                    <DataGridTextColumn Header="Wymiary" Binding="{Binding WymiaryOpis}" Width="120"/>
+                    <DataGridTextColumn Header="Uwagi" Binding="{Binding UwagiPozycji}" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+        <Button Grid.Row="2" Content="Zamknij" Width="100" HorizontalAlignment="Right" Margin="0,10,0,0" Click="BtnZamknij_Click"/>
+    </Grid>
+</Window>

@@ -1,0 +1,31 @@
+﻿<Window x:Class="MP_Fenster_App.KopiujPozycjeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Icon="/Ikony/logo.png"
+        Title="Kopiuj pozycje z innego zlecenia" Height="520" Width="780"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="Numer zlecenia:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox x:Name="TxtNumerZlecenia" Width="160" Margin="0,0,8,0"/>
+            <Button Content="Szukaj" Width="90" Click="BtnSzukaj_Click"/>
+        </StackPanel>
+        <DataGrid x:Name="DgPozycje" Grid.Row="1" AutoGenerateColumns="False" SelectionMode="Extended" IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Poz." Binding="{Binding Poz}" Width="60"/>
+                <DataGridTextColumn Header="Produkt" Binding="{Binding NrProd}" Width="90"/>
+                <DataGridTextColumn Header="Szt." Binding="{Binding Szt}" Width="60"/>
+                <DataGridTextColumn Header="Wymiary" Binding="{Binding WymiaryOpis}" Width="140"/>
+                <DataGridTextColumn Header="Oznaczenie" Binding="{Binding Oznaczenie}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="Kopiuj zaznaczone" Width="140" Margin="0,0,6,0" Click="BtnKopiuj_Click"/>
+            <Button Content="Anuluj" Width="100" Click="BtnAnuluj_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

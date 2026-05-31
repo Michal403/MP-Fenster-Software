@@ -1,0 +1,21 @@
+﻿<Window x:Class="MP_Fenster_App.TechnologAkceptacja"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MP_Fenster_App"
+        mc:Ignorable="d" Icon="/Ikony/logo.png"
+        Title="TechnologAkceptacja" Height="450" Width="800">
+    <Grid>
+        <StackPanel Margin="20">
+            <TextBlock Text="Opis błędu:" FontWeight="Bold"/>
+            <TextBox x:Name="TxtOpisBledu" IsReadOnly="True" Margin="0,5,0,15"/>
+
+            <TextBlock Text="Uwagi Technologa:" FontWeight="Bold"/>
+            <TextBox x:Name="TxtUwagi" Height="60" Margin="0,5,0,15"/>
+
+            <Button Content="Zatwierdź odstępstwo" Click="BtnZatwierdz_Click" Background="LightGreen"/>
+        </StackPanel>
+    </Grid>
+</Window>
+

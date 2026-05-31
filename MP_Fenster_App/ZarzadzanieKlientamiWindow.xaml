@@ -1,6 +1,6 @@
 ﻿<Window x:Class="MP_Fenster_App.ZarzadzanieKlientamiWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Icon="/Ikony/logo.png"
         Title="SeaShark - Panel Kontrahentów" Height="500" Width="850"
         WindowStartupLocation="CenterOwner" Background="#F5F5F5">
     <Grid Margin="15">
