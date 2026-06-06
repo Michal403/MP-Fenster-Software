@@ -40,9 +40,13 @@ namespace MP_Fenster_App
                 BtnAkceptuj.Visibility = _czyTechnolog ? Visibility.Visible : Visibility.Collapsed;
                 TxtKomentarz.IsReadOnly = !_czyTechnolog;
                 TxtKomentarz.IsEnabled = _czyTechnolog;
+
                 if (_czyTechnolog)
                 {
-                    TxtKomentarz.Text = _pozycja.KomentarzTechnologa ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(TxtKomentarz.Text))
+                    {
+                        TxtKomentarz.Text = "Zaakceptowano bez gwarancji.";
+                    }
                 }
                 else
                 {
@@ -68,16 +72,10 @@ namespace MP_Fenster_App
                 MessageBox.Show("Tylko technolog albo administrator może zaakceptować odstępstwo.", "Brak uprawnień", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            string komentarz = TxtKomentarz.Text.Trim();
-            if (string.IsNullOrWhiteSpace(komentarz))
-            {
-                MessageBox.Show("Wpisz komentarz technologa przed akceptacją odstępstwa.", "Komentarz wymagany", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
 
             _pozycja.StatusZablokowany = false;
             _pozycja.OdstepstwoZaakceptowane = true;
-            _pozycja.KomentarzTechnologa = komentarz;
+            _pozycja.KomentarzTechnologa = TxtKomentarz.Text.Trim();
             DialogResult = true;
             Close();
         }
@@ -89,7 +87,5 @@ namespace MP_Fenster_App
         }
     }
 }
-
-
 
 

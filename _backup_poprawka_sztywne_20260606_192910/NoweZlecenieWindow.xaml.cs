@@ -1770,7 +1770,10 @@ private void RysujGabarytyOkna()
                                 sortOrder++;
                                 using (SqlCommand cmdLine = new SqlCommand(sqlLine, cn, tx))
                                 {
-                                    double cenaJednostkowa = ObliczCeneJednostkowaNettoZBazy(pos);
+                                    double m2 = (pos.Szerokosc / 1000.0) * (pos.Wysokosc / 1000.0);
+                                    double cenaBazowa = pos.SystemOkna.Contains("Salamander") ? 620 : 450;
+                                    if (pos.Wypelnienie == "3-48") cenaBazowa += 130;
+                                    double cenaJednostkowa = m2 * cenaBazowa;
 
                                     cmdLine.Parameters.AddWithValue("@idZlec", idZleceniaDoPozycji);
                                     object parentId = DBNull.Value;
@@ -2249,7 +2252,6 @@ private void RysujGabarytyOkna()
         }
     }
 }
-
 
 
 

@@ -1622,45 +1622,6 @@ private void RysujGabarytyOkna()
             RysujGabarytyOkna();
             TxtDetalPozycji.Text = ZbudujOpisPozycji(pos);
         }
-        private double ObliczCeneJednostkowaNettoZBazy(PozycjaZlecenia pos)
-        {
-            if (pos == null || pos.CzyNaglowekZestawu || pos.Szerokosc <= 0 || pos.Wysokosc <= 0)
-                return 0;
-
-            if (pos.CzyCenaReczna)
-                return pos.CenaRecznaNetto;
-
-            double m2 = (pos.Szerokosc / 1000.0) * (pos.Wysokosc / 1000.0);
-            double obwodMb = 2 * ((pos.Szerokosc / 1000.0) + (pos.Wysokosc / 1000.0));
-
-            double cenaProfilM2 = PobierzCeneM2Systemu(pos.SystemOkna);
-            double cenaPakietM2 = PobierzCeneProsta("SELECT CenaBazowaM2 FROM PakietySzybowe WHERE Oznaczenie = @v", "@v", pos.Wypelnienie);
-            double cenaSzybaZewM2 = PobierzCeneProsta("SELECT CenaDoplatyM2 FROM SzybyKomponenty WHERE Oznaczenie = @v", "@v", pos.SzybaZewnetrzna);
-            double cenaSzybaWewM2 = PobierzCeneProsta("SELECT CenaDoplatyM2 FROM SzybyKomponenty WHERE Oznaczenie = @v", "@v", pos.SzybaWewnetrzna);
-            double doplataKolorZewProc = PobierzCeneProsta("SELECT DoplataProcentowa FROM KoloryOklein WHERE Producent = N'Uniwersalny' AND Oznaczenie = @v", "@v", pos.KolorOkleiny);
-            double doplataKolorWewProc = PobierzCeneProsta("SELECT DoplataProcentowa FROM KoloryOklein WHERE Producent = N'Uniwersalny' AND Oznaczenie = @v", "@v", pos.KolorWewnetrzny);
-            double cenaRamkaMb = PobierzCeneProsta("SELECT CenaDoplatyMb FROM RamkiDystansowe WHERE Oznaczenie = @v", "@v", pos.TypRamki);
-            double cenaKlasa = PobierzCeneProsta("SELECT CenaDoplaty FROM OkuciaKlasyBezpieczenstwa WHERE Oznaczenie = @v", "@v", pos.KlasaBezpieczenstwa);
-            double cenaOkuc = PobierzCeneProsta("SELECT CenaBazowaOkucia FROM OkuciaWariantyOtwierania WHERE Oznaczenie = @v", "@v", pos.WariantOkuc);
-            double cenaZawiasy = PobierzCeneProsta("SELECT CenaDoplaty FROM OkuciaZawiasy WHERE Oznaczenie = @v", "@v", pos.Zawiasy);
-            double cenaKolorZawiasow = PobierzCeneProsta("SELECT CenaDoplaty FROM OkuciaKoloryOslonek WHERE NazwaKoloru = @v", "@v", pos.KolorZawiasow);
-            double cenaKlamka = PobierzCeneProsta("SELECT CenaBazowa FROM KlamkiKatalog WHERE NazwaHandlowa = @v", "@v", pos.TypKlamki);
-            double cenaKolorKlamki = PobierzCeneProsta("SELECT CenaDoplaty FROM KlamkiKolory WHERE NazwaKoloru = @v", "@v", pos.KolorKlamki);
-            double cenaWysokoscKlamki = PobierzCeneProsta("SELECT Doplata FROM KlamkiWysokosci WHERE Oznaczenie = @v", "@v", pos.WysokoscKlamki);
-            double cenaListwaMb = PobierzCeneProsta("SELECT CenaBazowaMb FROM ListwyPodparapetowe WHERE Oznaczenie = @v", "@v", pos.ListwaPodparapetowa);
-            double cenaSzprosMb = PobierzCeneProsta("SELECT TOP 1 CenaBazowaMb FROM SzprosyKatalog WHERE CAST(SzerokoscMm AS nvarchar(10)) = @v", "@v", pos.Szpros);
-
-            double cena =
-                (m2 * (cenaProfilM2 + cenaPakietM2 + cenaSzybaZewM2 + cenaSzybaWewM2)) +
-                (obwodMb * cenaRamkaMb) +
-                cenaKlasa + cenaOkuc + cenaZawiasy + cenaKolorZawiasow +
-                cenaKlamka + cenaKolorKlamki + cenaWysokoscKlamki +
-                (pos.ListwaPodparapetowa == "TAK" ? obwodMb * cenaListwaMb : 0) +
-                (string.IsNullOrWhiteSpace(pos.Szpros) ? 0 : obwodMb * cenaSzprosMb);
-
-            double doplataKolorProc = Math.Max(doplataKolorZewProc, doplataKolorWewProc);
-            return cena + (cena * (doplataKolorProc / 100.0));
-        }
         private void BtnZamknijZapisz_Click(object sender, RoutedEventArgs e)
         {
             ZapiszZlecenieDoBazySystemu();
@@ -1770,7 +1731,10 @@ private void RysujGabarytyOkna()
                                 sortOrder++;
                                 using (SqlCommand cmdLine = new SqlCommand(sqlLine, cn, tx))
                                 {
-                                    double cenaJednostkowa = ObliczCeneJednostkowaNettoZBazy(pos);
+                                    double m2 = (pos.Szerokosc / 1000.0) * (pos.Wysokosc / 1000.0);
+                                    double cenaBazowa = pos.SystemOkna.Contains("Salamander") ? 620 : 450;
+                                    if (pos.Wypelnienie == "3-48") cenaBazowa += 130;
+                                    double cenaJednostkowa = m2 * cenaBazowa;
 
                                     cmdLine.Parameters.AddWithValue("@idZlec", idZleceniaDoPozycji);
                                     object parentId = DBNull.Value;
@@ -2249,8 +2213,6 @@ private void RysujGabarytyOkna()
         }
     }
 }
-
-
 
 
 
